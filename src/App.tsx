@@ -32,10 +32,15 @@ function ArtistRoute() {
   }} />;
 }
 
+function normalizePath(pathname: string) {
+  return pathname.replace(/\/+$/, '') || '/';
+}
+
 function AppRoutes() {
   const location = useLocation();
   const navigate = useNavigate();
-  const page: Page = location.pathname === '/artists' ? 'artists' : location.pathname.startsWith('/artists/') ? 'artist-detail' : location.pathname === '/book' ? 'booking' : 'home';
+  const pathname = normalizePath(location.pathname);
+  const page: Page = pathname === '/artists' ? 'artists' : pathname.startsWith('/artists/') ? 'artist-detail' : pathname === '/book' ? 'booking' : 'home';
 
   useEffect(() => {
     if (!location.hash) window.scrollTo({ top: 0, behavior: 'auto' });

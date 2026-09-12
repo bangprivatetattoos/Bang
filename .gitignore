@@ -25,14 +25,3 @@ logs/
 
 # Exact Figma recovery archive; this is a backup, not active project source.
 Follow Prompt Instructions.zip
-
-# Unused files left by the abandoned refactor; do not include in the visual baseline.
-.env.example
-eslint.config.js
-README.md
-vitest.config.ts
-/src/components/media/
-/src/config/
-/src/features/
-/src/lib/
-/src/pages/Home/
