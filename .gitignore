@@ -29,7 +29,6 @@ Follow Prompt Instructions.zip
 # Unused files left by the abandoned refactor; do not include in the visual baseline.
 .env.example
 eslint.config.js
-package-lock.json
 README.md
 vitest.config.ts
 /src/components/media/

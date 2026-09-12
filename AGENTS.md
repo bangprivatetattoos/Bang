@@ -18,8 +18,19 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
 - `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
 - `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
+- `package-lock.json` - npm lockfile; the single source of truth for installed dependency versions
 - `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
-- `.mise.toml` - Toolchain versions for Node.js and pnpm
+- `.mise.toml` - Toolchain versions for Node.js and pnpm (pnpm is used only by the Figma Make platform scripts in `.figma/make/`, not by the project workflow)
+
+## Package Manager
+
+This project uses **npm**. `package-lock.json` is the only lockfile.
+
+- Fresh install: `npm ci`
+- Add or update a dependency: `npm install <package>`, then commit the updated `package-lock.json`
+- Development server: `npm run dev`
+- Production build: `npm run build`
+- Do not use pnpm or yarn, and do not add `pnpm-lock.yaml` or `yarn.lock`.
 
 ## Dependencies
 

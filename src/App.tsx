@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Nav from './components/Nav';
 import FloatingWA from './components/FloatingWA';
 import Home from './pages/Home';
@@ -12,7 +12,6 @@ type Page = 'home' | 'artists' | 'artist-detail' | 'booking';
 
 function BookingRoute() {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
   const artistId = params.get('artist');
   const service = params.get('service');
   const artist = artistId ? ARTISTS.find(item => item.id === artistId) : null;
@@ -21,9 +20,8 @@ function BookingRoute() {
 }
 
 function ArtistRoute() {
-  const location = useLocation();
+  const { artistSlug } = useParams();
   const navigate = useNavigate();
-  const artistSlug = location.pathname.split('/').pop();
   const artist = ARTISTS.find(item => item.id === artistSlug);
 
   if (!artist) return <Navigate to="/artists" replace />;
