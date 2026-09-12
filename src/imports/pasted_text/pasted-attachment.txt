@@ -1,0 +1,1165 @@
+# FIGMA MAKE DESIGN PROMPT — PREMIUM TATTOO STUDIO WEBSITE
+
+Design a complete, polished, responsive website UI for a premium tattoo studio in the United States.
+
+This website will primarily receive visitors from paid Facebook and Instagram advertising. Its primary business objective is to establish immediate credibility, showcase the quality of the tattoo work and artists, and convert visitors into consultation/appointment leads.
+
+The primary conversion journey is:
+
+**Advertisement → Website → Discover Artists/Work → Book Appointment → Submit Lead Form → Continue Conversation on WhatsApp**
+
+The website must feel like a premium tattoo brand, creative studio, and interactive editorial experience—not a generic local-business website.
+
+---
+
+# 1. VISUAL REFERENCE AND CREATIVE DIRECTION
+
+The design direction is inspired by premium editorial tattoo, fashion, photography, and creative-studio websites.
+
+The desired experience is:
+
+* premium
+* editorial
+* artistic
+* cinematic
+* minimal
+* modern
+* slightly underground
+* confident
+* photography-led
+* highly interactive
+* sophisticated
+
+Do NOT create:
+
+* a generic Bootstrap business website
+* a colorful SaaS landing page
+* a dashboard aesthetic
+* excessive rounded cards
+* glassmorphism
+* neon effects
+* bright gradients
+* glowing borders
+* excessive decorative icons
+* gimmicky animations
+* cluttered layouts
+
+The interface itself should remain restrained so that tattoo photography, artist portraits, typography, spacing, and motion provide the personality.
+
+---
+
+# 2. STRICT DARK-MODE DESIGN SYSTEM
+
+The entire website must be dark mode.
+
+Use a charcoal-based palette rather than pure black everywhere.
+
+Suggested direction:
+
+Primary background:
+approximately #111111 / #121212
+
+Secondary surfaces:
+approximately #171717
+
+Raised surfaces where necessary:
+approximately #1C1C1C
+
+Primary text:
+approximately #F5F5F2
+
+Secondary text:
+approximately #B7B7B2
+
+Muted text:
+approximately #858582
+
+Borders:
+subtle translucent white/grey.
+
+The primary visual accent should essentially be **white/off-white**.
+
+Do not introduce unnecessary brand colors.
+
+Natural color contained within tattoo photography may remain visible and should provide much of the visual variation.
+
+---
+
+# 3. TYPOGRAPHY
+
+Typography must be one of the strongest elements of the design.
+
+Use:
+
+1. A strong editorial/condensed display typeface for major headings.
+2. A clean modern sans-serif for body copy, navigation, forms, and interface elements.
+
+Use:
+
+* enormous section titles
+* uppercase display typography
+* strong scale contrast
+* compact labels
+* deliberate letter spacing
+* controlled line heights
+* short confident copy
+
+Major words such as:
+
+ARTISTS
+
+WORK
+
+THE STUDIO
+
+HOME CALL
+
+BOOK
+
+should become part of the visual composition rather than behaving like ordinary section headings.
+
+Do not sacrifice mobile readability for styling.
+
+---
+
+# 4. RESPONSIVE DESIGN PHILOSOPHY
+
+Design separate intentional compositions for:
+
+### Mobile
+
+Intimate, vertical, touch-first, highly photographic.
+
+### Tablet
+
+Editorial hybrid, touch-first, with selective two-column compositions.
+
+### Desktop
+
+Spacious, cinematic, composition-driven, with stronger layering, asymmetric layouts, and hover interactions.
+
+### Ultrawide
+
+Maintain structural content constraints while allowing selected photography and oversized typography to bleed beyond the normal content grid.
+
+Do NOT simply shrink desktop for mobile or stretch mobile for desktop.
+
+---
+
+# 5. NAVIGATION
+
+Create an extremely minimal navigation system.
+
+Desktop navigation:
+
+LOGO
+
+Artists
+Work
+Studio
+Contact
+
+BOOK APPOINTMENT
+
+BOOK APPOINTMENT should receive stronger visual emphasis without using a bright accent color.
+
+Use either:
+
+* white button with dark text
+* or a refined high-contrast outlined treatment
+
+Mobile navigation:
+
+LOGO                                      BOOK   MENU
+
+Keep it extremely clean.
+
+Consider smart sticky behavior:
+
+* visible initially
+* slightly compact after scrolling
+* can gently hide while scrolling downward
+* returns when scrolling upward
+
+Navigation must never interfere with important photography or typography.
+
+---
+
+# 6. HERO — HIGHLY INTERACTIVE
+
+The hero must create an immediate premium impression.
+
+Do NOT design a generic:
+
+headline + paragraph + button + stock photo
+
+hero.
+
+Create an immersive, cinematic first viewport using strong tattoo/studio photography and editorial typography.
+
+Possible composition:
+
+large studio wordmark/name
+
+CUSTOM TATTOOING
+[LOCATION]
+
+very short supporting statement
+
+BOOK APPOINTMENT
+
+secondary:
+
+EXPLORE ARTISTS ↓
+
+The hero should feel alive.
+
+Design for subtle motion such as:
+
+* photographic reveal on load
+* typography reveal
+* slight image scaling
+* layered typography
+* controlled parallax
+* subtle scroll response
+* staggered entrance of small interface elements
+
+Animation must remain sophisticated and restrained.
+
+No bouncing, spinning, glowing, or flashy effects.
+
+---
+
+# 7. ARTISTS MUST COME IMMEDIATELY AFTER HERO
+
+Do NOT put About, Location, Services, testimonials, or Home Call immediately after the hero.
+
+After the hero, transition directly into:
+
+# ARTISTS
+
+This is one of the most important parts of the website.
+
+The studio will feature its **Top 10 tattoo artists**.
+
+The artists should feel like the stars of the website.
+
+Do NOT create ten identical cards in a conventional grid.
+
+Each artist should receive substantial visual presence.
+
+Artist information should include:
+
+* portrait/profile photography
+* artist name
+* short biography
+* tattoo specialties/styles
+* VIEW GALLERY
+* BOOK THIS ARTIST
+* optional Instagram/social link
+
+---
+
+# 8. TOP 10 ARTIST EXPERIENCE
+
+Create a visually engaging way of exploring all ten artists.
+
+The design may use a combination of:
+
+* large artist portraits
+* editorial scrolling
+* alternating layouts
+* controlled horizontal browsing where appropriate
+* oversized artist names
+* image transitions
+* selective sticky behavior
+* subtle image scaling
+* strong negative space
+
+Do not sacrifice usability for experimental interaction.
+
+Example artist presentation:
+
+LARGE PORTRAIT
+
+ARTIST NAME
+
+BLACK & GREY
+REALISM
+PORTRAITURE
+
+short introduction
+
+VIEW GALLERY →
+
+BOOK THIS ARTIST
+
+The next artist should not necessarily use an identical composition.
+
+Create controlled variation.
+
+For example:
+
+Artist 01:
+large image left / information right.
+
+Artist 02:
+information left / image right.
+
+Artist 03:
+larger full-width composition.
+
+Artist 04:
+portrait combined with oversized typography.
+
+Continue variations while preserving a coherent design system.
+
+On mobile, prioritize a vertical editorial experience with large portraits rather than tiny artist cards.
+
+---
+
+# 9. ARTIST GALLERY EXPERIENCE
+
+VIEW GALLERY must take the visitor into that specific artist's portfolio—not a generic mixed gallery.
+
+Create an Artist Detail / Gallery screen.
+
+Example:
+
+large artist portrait
+
+ARTIST NAME
+
+specialties
+
+short biography
+
+BOOK [ARTIST]
+
+then:
+
+SELECTED WORK
+
+Use large tattoo photography.
+
+Support:
+
+* portrait images
+* landscape images
+* close-up tattoo photography
+* mixed editorial grids
+* masonry-inspired composition
+* occasional full-width images
+
+Do not use tiny thumbnails.
+
+Selecting an artwork should open an immersive image viewer.
+
+Mobile viewer:
+
+* swipe left/right
+* large image
+* close control
+* artist attribution
+* booking action where appropriate
+
+Desktop:
+
+* previous/next
+* keyboard-friendly navigation
+* subtle transitions
+* artist attribution
+
+---
+
+# 10. BOOK THIS ARTIST
+
+Every artist should have:
+
+BOOK THIS ARTIST
+
+This is different from the site's general:
+
+BOOK APPOINTMENT
+
+When BOOK THIS ARTIST is selected, the booking experience should already know which artist the visitor requested.
+
+The visitor should NOT have to select the artist again.
+
+Design the booking screen to communicate:
+
+REQUEST AN APPOINTMENT
+WITH [ARTIST NAME]
+
+Include a small artist portrait or visual reference.
+
+---
+
+# 11. GENERAL TATTOO PORTFOLIO / WORK SECTION
+
+After artist discovery, introduce a more visually dense:
+
+# WORK
+
+section.
+
+This should contrast with the spacious artist sections.
+
+Artists:
+
+spacious / personal / editorial
+
+Work:
+
+dense / immersive / exploratory
+
+Use an asymmetric image composition or editorial masonry system.
+
+Allow selected images to receive substantially more visual space.
+
+Artwork should be tappable/clickable.
+
+Where relevant, the image viewer can display:
+
+ARTIST: [NAME]
+
+VIEW ARTIST
+
+BOOK ARTIST
+
+This allows portfolio browsing to become another artist-discovery and booking route.
+
+---
+
+# 12. GENERAL BOOK APPOINTMENT CTAs
+
+The website must support visitors who do not know which artist they want.
+
+BOOK APPOINTMENT should therefore remain available naturally throughout the website.
+
+Potential placements:
+
+* navigation
+* hero
+* after artist exploration
+* portfolio section
+* Home Call section
+* studio/location section
+* final CTA
+
+Do NOT aggressively repeat giant booking buttons every few pixels.
+
+Keep conversion opportunities visible but premium and restrained.
+
+Example mid-page message:
+
+NOT SURE WHICH ARTIST?
+
+Tell us what you have in mind and our team can help.
+
+BOOK APPOINTMENT →
+
+---
+
+# 13. HOME CALL SERVICE — IMPORTANT SERVICE OFFER
+
+The studio offers a **Home Call tattoo service**.
+
+This is an important business differentiator and should receive a dedicated editorial section rather than being hidden inside a footer.
+
+The service should communicate clearly that:
+
+* clients can request tattoo services at their location
+* the studio can travel to locations across the United States
+* the Home Call service is offered free of charge, according to the studio's service terms/availability
+* visitors can begin arranging the service through the booking/consultation process
+
+Create a premium section with a major heading such as:
+
+# THE STUDIO
+
+# CAN COME TO YOU.
+
+or:
+
+# HOME CALL
+
+Supporting direction:
+
+**Prefer your session at your location?**
+
+Our Home Call service allows eligible clients to arrange tattoo services at their preferred location. We can accommodate requests across the United States.
+
+**Home Call service is offered at no additional service charge, subject to scheduling, artist availability, location suitability, and studio confirmation.**
+
+CTA:
+
+BOOK A HOME CALL →
+
+Secondary:
+
+ASK US ON WHATSAPP →
+
+Do not make this section look like a promotional coupon or cheap "FREE!" advertisement.
+
+The word FREE should not become a giant colorful badge.
+
+Communicate the benefit confidently and professionally.
+
+Use editorial photography that could represent a professional mobile tattoo setup, artist preparation, or an appropriate client environment.
+
+The section should reinforce professionalism and safety rather than suggesting informal tattooing.
+
+---
+
+# 14. STUDIO / PHYSICAL LOCATION
+
+After establishing artists, artwork, and Home Call availability, introduce the physical studio.
+
+Large heading:
+
+# THE STUDIO
+
+Use substantial interior/studio photography.
+
+Display:
+
+* studio name
+* full business address
+* city/state
+* opening information
+* telephone
+* WhatsApp
+* email
+* Instagram/social links
+
+Primary actions:
+
+GET DIRECTIONS ↗
+
+BOOK APPOINTMENT
+
+Do not hide this information in the footer.
+
+Location should become part of the visual storytelling and help establish legitimacy.
+
+A map may be included, but it should not visually dominate the section.
+
+---
+
+# 15. HOME CALL + PHYSICAL STUDIO RELATIONSHIP
+
+Make the relationship extremely clear:
+
+Visitors can either:
+
+**Visit the studio**
+
+OR
+
+**Request a Home Call**
+
+Design this as an elegant choice rather than two generic cards.
+
+Example:
+
+VISIT US
+[Studio Address]
+
+GET DIRECTIONS →
+
+—
+
+OR WE'LL COME TO YOU.
+
+Home Call requests available across the United States.
+
+REQUEST HOME CALL →
+
+This is an important conversion moment.
+
+---
+
+# 16. BOOKING PAGE
+
+Create a dedicated `/book` consultation experience.
+
+It must preserve the exact same premium dark visual system.
+
+Do NOT suddenly make the booking page resemble a generic white SaaS form.
+
+Opening:
+
+# LET'S TALK
+
+# ABOUT YOUR TATTOO.
+
+Supporting copy:
+
+Tell us a few details below. Once your request is received, you can continue directly with our booking team through WhatsApp.
+
+The visitor should also be able to indicate whether they want:
+
+STUDIO APPOINTMENT
+
+or
+
+HOME CALL
+
+If Home Call is selected, reveal only the additional information genuinely required to evaluate the request.
+
+---
+
+# 17. BOOKING FORM
+
+Keep the initial form intentionally concise.
+
+Suggested fields:
+
+FULL NAME
+
+EMAIL
+
+WHATSAPP / PHONE NUMBER
+
+CITY / LOCATION
+
+SERVICE TYPE
+
+* Studio Appointment
+* Home Call
+
+PREFERRED ARTIST
+
+* optional unless coming from an artist-specific booking action
+
+TELL US BRIEFLY ABOUT YOUR TATTOO IDEA
+
+Potential optional fields:
+
+* placement
+* approximate size
+
+Do not request unnecessary sensitive information during the first conversion step.
+
+For Home Call, additional location details can be collected later through the consultation if they are not necessary immediately.
+
+---
+
+# 18. FORM UI
+
+Avoid standard browser-looking controls.
+
+Use:
+
+* charcoal input surfaces
+* thin grey borders
+* strong labels
+* generous mobile input height
+* subtle focus states
+* clear accessible error messages
+* restrained validation
+* loading state
+* successful submission state
+
+Inputs should generally use minimal radius.
+
+Avoid giant rounded pill inputs.
+
+Submit CTA:
+
+CONTINUE TO WHATSAPP →
+
+While processing:
+
+SENDING REQUEST...
+
+Prevent duplicate submissions.
+
+---
+
+# 19. SUCCESS STATE BEFORE WHATSAPP
+
+Do NOT immediately throw the visitor into WhatsApp after form submission.
+
+First show confirmation.
+
+Example:
+
+# REQUEST RECEIVED.
+
+Reference:
+
+TAT-0842
+
+Your consultation request has been saved.
+
+Continue with our booking team on WhatsApp to discuss your tattoo, artist availability, scheduling, pricing, placement, references, and any additional details.
+
+CONTINUE TO WHATSAPP →
+
+The interface may automatically redirect after a short delay, but the explicit button must remain.
+
+---
+
+# 20. WHATSAPP HANDOFF
+
+WhatsApp should open with a concise prefilled message such as:
+
+"Hi, I just submitted tattoo consultation TAT-0842 through the website."
+
+Do not place sensitive booking information directly inside the WhatsApp URL.
+
+The website/backend should retain the submitted lead independently.
+
+---
+
+# 21. FLOATING WHATSAPP BUTTON — IMPORTANT
+
+Add a subtle floating WhatsApp communication button throughout the public website.
+
+This is primarily important on mobile.
+
+### MOBILE POSITION
+
+Place it near the **bottom-left corner** of the viewport.
+
+It must:
+
+* remain easily reachable with the thumb
+* avoid interfering with browser controls
+* avoid the iPhone home indicator
+* avoid covering important content
+* avoid overlapping form controls
+* avoid competing visually with primary Book Appointment CTAs
+
+Use safe-area-aware positioning.
+
+Conceptually:
+
+bottom:
+approximately `max(18–24px, env(safe-area-inset-bottom) + 12px)`
+
+left:
+approximately `max(16–20px, env(safe-area-inset-left) + 12px)`
+
+Do not place it flush against the screen edge.
+
+### VISUAL STYLE
+
+Do NOT use a giant bright-green floating bubble that destroys the monochrome design.
+
+Create a refined interpretation.
+
+For example:
+
+small circular or compact rounded control
+
+charcoal/near-black surface
+
+subtle white/grey border
+
+white WhatsApp icon
+
+very subtle shadow/separation from photography
+
+On hover/touch/intent, it may reveal:
+
+**CHAT ON WHATSAPP**
+
+If retaining recognizable WhatsApp green is necessary for immediate recognition, use it extremely sparingly—for example only within the small WhatsApp glyph rather than turning the entire control bright green.
+
+### BEHAVIOR
+
+Tap:
+
+open the studio's WhatsApp conversation.
+
+The floating button represents **general communication**.
+
+It should not replace the formal Book Appointment → lead form → WhatsApp flow.
+
+This distinction is important:
+
+Floating WhatsApp = quick questions/general communication.
+
+Book Appointment = structured consultation lead capture.
+
+The WhatsApp button should remain secondary to Book Appointment.
+
+### CONTEXTUAL BEHAVIOR
+
+When a full-screen menu, gallery viewer, modal, or booking overlay is active, intelligently hide or reposition the floating WhatsApp control so it never obstructs controls.
+
+On the booking form itself, consider reducing its prominence because WhatsApp is already the next step.
+
+---
+
+# 22. SIMPLE BOOKING PROCESS SECTION
+
+Include a short explanation near the lower portion of the landing page.
+
+Example:
+
+# HOW IT WORKS
+
+01
+TELL US YOUR IDEA
+
+02
+CHOOSE AN ARTIST OR LET US RECOMMEND ONE
+
+03
+CHOOSE STUDIO OR HOME CALL
+
+04
+CONTINUE WITH OUR TEAM ON WHATSAPP
+
+Keep this visually minimal.
+
+Do not create four colorful SaaS feature cards.
+
+---
+
+# 23. FINAL CONVERSION SECTION
+
+Create a large cinematic final CTA.
+
+Use generous negative space or powerful tattoo/studio imagery.
+
+Possible headline:
+
+# YOUR NEXT PIECE
+
+# STARTS HERE.
+
+Supporting text should remain short.
+
+Primary:
+
+BOOK APPOINTMENT →
+
+Secondary:
+
+CHAT ON WHATSAPP →
+
+This should feel like the visual conclusion of the page.
+
+---
+
+# 24. FOOTER
+
+Keep the footer minimal and editorial.
+
+Consider an oversized studio wordmark.
+
+Include:
+
+* studio address
+* WhatsApp
+* phone
+* email
+* Instagram
+* Artists
+* Work
+* Home Call
+* Contact
+* Privacy
+* Terms
+
+Do not create a huge corporate multi-column footer.
+
+---
+
+# 25. MOBILE-FIRST REQUIREMENTS
+
+Most paid-ad traffic is expected from Facebook and Instagram on smartphones.
+
+The mobile experience must therefore be treated as a first-class design.
+
+Pay particular attention to:
+
+* hero image cropping
+* enormous but controlled typography
+* artist portraits
+* gallery composition
+* thumb reach
+* booking buttons
+* floating WhatsApp button
+* forms
+* full-screen menu
+* gallery viewer
+* vertical rhythm
+* performance
+* in-app Facebook/Instagram browsers
+* Safari browser chrome
+
+Avoid tiny touch targets.
+
+Use at least approximately 44×44px interaction targets.
+
+---
+
+# 26. IPHONE SAFE AREAS
+
+The website must properly accommodate:
+
+* iPhone notch
+* Dynamic Island
+* status bar
+* rounded corners
+* Safari browser chrome
+* bottom home indicator
+
+Design all fixed/sticky elements around:
+
+env(safe-area-inset-top)
+
+env(safe-area-inset-right)
+
+env(safe-area-inset-bottom)
+
+env(safe-area-inset-left)
+
+This applies especially to:
+
+* navigation
+* hero
+* mobile menu
+* floating WhatsApp button
+* sticky booking controls
+* image viewer
+* modals
+* bottom controls
+
+Do not place important UI directly against device edges.
+
+---
+
+# 27. TABLET DESIGN
+
+Create a deliberate tablet layout.
+
+Tablet must not simply be enlarged mobile.
+
+Use:
+
+* selective two-column artist compositions
+* larger image proportions
+* 2–3 column galleries
+* generous whitespace
+* touch-first interaction
+* responsive typography
+* appropriate navigation transformation
+
+Portrait tablets can remain closer to mobile editorial composition.
+
+Landscape tablets can begin introducing desktop-style split layouts.
+
+Do not require hover for any functionality.
+
+---
+
+# 28. DESKTOP DESIGN
+
+Desktop should feel substantially more cinematic.
+
+Use:
+
+* 12-column underlying grid
+* asymmetric composition
+* large negative space
+* large artist portraits
+* alternating image/text layouts
+* oversized typography
+* controlled visual overlap
+* wider galleries
+* occasional sticky editorial sections
+* refined hover interactions
+* subtle cursor-aware effects only where useful
+
+Do NOT simply stretch mobile components across the screen.
+
+---
+
+# 29. MOTION SYSTEM
+
+Design motion around three ideas:
+
+REVEAL
+SHIFT
+FOCUS
+
+Examples:
+
+* image clip reveals
+* small opacity transitions
+* slight vertical text entrances
+* controlled image scaling
+* gallery transitions
+* menu transitions
+* artist transitions
+* subtle parallax
+* button inversion
+* page transitions
+
+Avoid:
+
+* bouncing
+* spinning
+* glowing
+* particles
+* excessive 3D
+* dramatic scroll hijacking
+
+Motion should feel premium and editorial.
+
+Provide a reduced-motion state.
+
+---
+
+# 30. PERFORMANCE-AWARE DESIGN
+
+This website will contain significant high-quality photography.
+
+Design with realistic performance constraints.
+
+Plan for:
+
+* AVIF/WebP
+* responsive image sizes
+* lazy loading
+* image CDN/storage
+* art-directed hero imagery
+* limited initial preload
+* optimized gallery loading
+* lightweight motion
+* avoiding unnecessary autoplay video
+* avoiding enormous first-load payloads
+
+The site must remain fast on mobile connections because paid-ad visitors may leave quickly if the first viewport loads slowly.
+
+---
+
+# 31. ACCESSIBILITY
+
+Dark minimalism must remain accessible.
+
+Design for:
+
+* WCAG-appropriate contrast
+* visible focus states
+* keyboard navigation
+* semantic controls
+* form labels
+* accessible errors
+* image alt-text strategy
+* reduced motion
+* large touch targets
+* readable body typography
+
+Do not use low contrast simply for aesthetic minimalism.
+
+---
+
+# 32. PUBLIC-SITE ARCHITECTURE PREPARATION
+
+Do NOT design the admin dashboard yet.
+
+However, design the public experience so it can later be driven by structured content managed through an admin system.
+
+Future admin-controlled content will include:
+
+* artists
+* artist bios
+* specialties
+* artist portraits
+* galleries
+* portfolio work
+* booking leads
+* studio details
+* Home Call information
+* contact information
+* social links
+
+Do not make the design dependent on permanently hard-coded content.
+
+---
+
+# 33. REQUIRED FIGMA MAKE OUTPUT
+
+Create a coherent responsive system showing at minimum:
+
+### HOME
+
+* navigation
+* interactive hero
+* Top 10 Artists experience
+* artist actions
+* general Work/Portfolio
+* Home Call service
+* Studio/location
+* How It Works
+* final booking CTA
+* footer
+* floating WhatsApp control
+
+### ARTISTS
+
+* all ten artists
+* editorial browsing experience
+
+### ARTIST DETAIL
+
+* artist introduction
+* specialties
+* gallery
+* image viewer behavior
+* Book This Artist CTA
+
+### BOOKING
+
+* general booking state
+* artist-preselected state
+* Studio Appointment selection
+* Home Call selection
+* form validation examples
+* loading state
+* success state
+* WhatsApp handoff
+
+### RESPONSIVE VIEWS
+
+Create intentional designs for:
+
+* representative modern iPhone
+* larger mobile
+* tablet portrait
+* tablet landscape
+* laptop
+* desktop
+* large desktop
+
+Do not treat these as simple scaled versions of one layout.
+
+---
+
+# FINAL CREATIVE PRINCIPLE
+
+The experience should feel like:
+
+**an interactive tattoo editorial that happens to contain an exceptionally well-designed conversion system.**
+
+The visual journey should be:
+
+**BRAND IMPACT → TOP 10 ARTISTS → ARTIST WORK → TATTOO CREDIBILITY → HOME CALL OPTION → PHYSICAL STUDIO → CONSULTATION → WHATSAPP**
+
+The conversion system underneath should be:
+
+**DISCOVER → TRUST → CHOOSE → BOOK → LEAD CAPTURED → WHATSAPP**
+
+Prioritize, in this exact order:
+
+**Premium visual presentation → Tattoo portfolio credibility → Top 10 artist discovery → Booking conversion → Studio/Home Call flexibility → WhatsApp communication → Excellent mobile experience.**
+
+Keep the final design original. Use the reference only for its editorial philosophy, hierarchy, photographic confidence, minimal interaction language, and cinematic pacing—not its branding, proprietary artwork, wording, or exact compositions.
