@@ -2,25 +2,23 @@ import { useState, useEffect } from 'react';
 import { ARTISTS } from '../data/artists';
 
 type ServiceType = 'studio' | 'home-call';
-type FormState = 'idle' | 'loading' | 'success';
+type FormState = 'idle' | 'loading' | 'error';
 
 interface BookingProps {
   preselectedArtistId?: string | null;
-  onNavigate: (page: string, id?: string) => void;
+  preselectedServiceType?: ServiceType;
 }
 
-const WA_NUMBER = '12125550147';
-
-function generateRef() {
-  return 'TAT-' + String(Math.floor(Math.random() * 9000) + 1000);
+async function submitBooking(_booking: unknown): Promise<never> {
+  throw new Error('Online booking submissions are not configured yet. Please contact the studio on WhatsApp.');
 }
 
-export default function Booking({ preselectedArtistId, onNavigate }: BookingProps) {
+export default function Booking({ preselectedArtistId, preselectedServiceType }: BookingProps) {
   const artist = preselectedArtistId ? ARTISTS.find(a => a.id === preselectedArtistId) : null;
   const [formState, setFormState] = useState<FormState>('idle');
-  const [ref, setRef] = useState('');
-  const [serviceType, setServiceType] = useState<ServiceType>('studio');
+  const [serviceType, setServiceType] = useState<ServiceType>(preselectedServiceType ?? 'studio');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submissionError, setSubmissionError] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -38,6 +36,10 @@ export default function Booking({ preselectedArtistId, onNavigate }: BookingProp
     if (preselectedArtistId) setForm(f => ({ ...f, artistId: preselectedArtistId }));
   }, [preselectedArtistId]);
 
+  useEffect(() => {
+    if (preselectedServiceType) setServiceType(preselectedServiceType);
+  }, [preselectedServiceType]);
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }));
     setErrors(er => { const n = { ...er }; delete n[k]; return n; });
@@ -47,7 +49,7 @@ export default function Booking({ preselectedArtistId, onNavigate }: BookingProp
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Required';
     if (!form.email.trim() || !form.email.includes('@')) e.email = 'Valid email required';
-    if (!form.whatsapp.trim()) e.whatsapp = 'Required';
+    if (!/^[+()\-\s\d]{7,}$/.test(form.whatsapp.trim())) e.whatsapp = 'Valid WhatsApp / phone required';
     if (!form.idea.trim()) e.idea = 'Tell us a little about your idea';
     if (serviceType === 'home-call' && !form.city.trim()) e.city = 'Required for Home Call';
     return e;
@@ -58,46 +60,14 @@ export default function Booking({ preselectedArtistId, onNavigate }: BookingProp
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setFormState('loading');
-    await new Promise(r => setTimeout(r, 1800));
-    const newRef = generateRef();
-    setRef(newRef);
-    setFormState('success');
+    setSubmissionError('');
+    try {
+      await submitBooking({ ...form, serviceType });
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : 'Unable to send your request.');
+      setFormState('error');
+    }
   };
-
-  const openWhatsApp = () => {
-    const msg = encodeURIComponent(`Hi, I just submitted tattoo consultation ${ref} through the NOIR Studio website.`);
-    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
-  };
-
-  if (formState === 'success') {
-    return (
-      <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-5 py-20 text-center" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
-        <p className="text-[10px] tracking-[0.3em] uppercase text-[#858582] font-body mb-6">Consultation Received</p>
-        <h1 className="font-display font-900 text-[18vw] md:text-[10vw] lg:text-[7vw] uppercase leading-none tracking-tight text-[#f5f5f2] mb-6">
-          REQUEST<br />RECEIVED.
-        </h1>
-        <div className="inline-block border border-white/10 px-6 py-3 mb-8">
-          <p className="text-[10px] tracking-[0.25em] uppercase text-[#858582] font-body mb-1">Reference</p>
-          <p className="font-display font-700 text-2xl tracking-widest text-[#f5f5f2]">{ref}</p>
-        </div>
-        <p className="font-body text-[#b7b7b2] text-sm max-w-md leading-relaxed mb-10">
-          Your consultation request has been saved. Continue with our booking team on WhatsApp to discuss your tattoo, artist availability, scheduling, pricing, placement, and references.
-        </p>
-        <button
-          onClick={openWhatsApp}
-          className="bg-[#f5f5f2] text-[#111111] font-body font-600 text-[11px] tracking-[0.2em] uppercase px-8 py-4 hover:bg-white transition-colors mb-4"
-        >
-          Continue to WhatsApp →
-        </button>
-        <button
-          onClick={() => onNavigate('home')}
-          className="text-[11px] tracking-[0.15em] uppercase font-body text-[#858582] hover:text-[#f5f5f2] transition-colors"
-        >
-          Back to Studio
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#111111]" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
@@ -202,6 +172,7 @@ export default function Booking({ preselectedArtistId, onNavigate }: BookingProp
             >
               {formState === 'loading' ? 'Sending Request...' : 'Continue to WhatsApp →'}
             </button>
+            {submissionError && <p role="alert" className="text-[10px] text-red-400 font-body text-center mt-4">{submissionError}</p>}
             <p className="text-[10px] text-[#858582] font-body text-center mt-4">
               Your information will be kept confidential and used only for booking purposes.
             </p>
@@ -217,7 +188,7 @@ function Field({ label, error, children }: { label: string; error?: string; chil
     <div>
       <label className="block text-[10px] tracking-[0.2em] uppercase text-[#858582] font-body mb-1.5">{label}</label>
       {children}
-      {error && <p className="text-[11px] text-red-400 font-body mt-1">{error}</p>}
+      {error && <p role="alert" className="text-[11px] text-red-400 font-body mt-1">{error}</p>}
     </div>
   );
 }

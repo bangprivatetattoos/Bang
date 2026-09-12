@@ -1,38 +1,71 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Nav from './components/Nav';
 import FloatingWA from './components/FloatingWA';
 import Home from './pages/Home';
 import Artists from './pages/Artists';
 import ArtistDetail from './pages/ArtistDetail';
 import Booking from './pages/Booking';
+import { ARTISTS } from './data/artists';
 
 type Page = 'home' | 'artists' | 'artist-detail' | 'booking';
 
-export default function App() {
-  const [page, setPage] = useState<Page>('home');
-  const [artistId, setArtistId] = useState<string | null>(null);
-  const [bookingArtistId, setBookingArtistId] = useState<string | null>(null);
+function BookingRoute() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const artistId = params.get('artist');
+  const service = params.get('service');
+  const artist = artistId ? ARTISTS.find(item => item.id === artistId) : null;
 
-  const navigate = (target: string, id?: string) => {
-    const p = target as Page;
-    setPage(p);
-    if (p === 'artist-detail') setArtistId(id ?? null);
-    if (p === 'booking') setBookingArtistId(id ?? null);
-    if (p !== 'booking') setBookingArtistId(null);
+  return <Booking preselectedArtistId={artist?.id ?? null} preselectedServiceType={service === 'home-call' ? 'home-call' : undefined} />;
+}
+
+function ArtistRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const artistSlug = location.pathname.split('/').pop();
+  const artist = ARTISTS.find(item => item.id === artistSlug);
+
+  if (!artist) return <Navigate to="/artists" replace />;
+  return <ArtistDetail artistId={artist.id} onNavigate={(target, id) => {
+    if (target === 'booking') navigate(`/book?artist=${encodeURIComponent(id ?? artist.id)}`);
+    else if (target === 'artist-detail' && id) navigate(`/artists/${encodeURIComponent(id)}`);
+    else navigate(target === 'artists' ? '/artists' : '/');
+  }} />;
+}
+
+function AppRoutes() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const page: Page = location.pathname === '/artists' ? 'artists' : location.pathname.startsWith('/artists/') ? 'artist-detail' : location.pathname === '/book' ? 'booking' : 'home';
+
+  useEffect(() => {
+    if (!location.hash) window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [location.pathname]);
+
+  const go = (target: string, id?: string) => {
+    if (target === 'artist-detail' && id) navigate(`/artists/${encodeURIComponent(id)}`);
+    else if (target === 'booking') navigate(id === '__home-call__' ? '/book?service=home-call' : id ? `/book?artist=${encodeURIComponent(id)}` : '/book');
+    else navigate(target === 'artists' ? '/artists' : '/');
   };
-
-  const isBookingPage = page === 'booking';
 
   return (
     <div className="bg-[#111111] min-h-screen">
-      <Nav onNavigate={navigate} currentPage={page} />
+      <Nav onNavigate={go} currentPage={page} />
 
-      {page === 'home' && <Home onNavigate={navigate} />}
-      {page === 'artists' && <Artists onNavigate={navigate} />}
-      {page === 'artist-detail' && artistId && <ArtistDetail artistId={artistId} onNavigate={navigate} />}
-      {page === 'booking' && <Booking preselectedArtistId={bookingArtistId} onNavigate={navigate} />}
+      <Routes>
+        <Route path="/" element={<Home onNavigate={go} />} />
+        <Route path="/artists" element={<Artists onNavigate={go} />} />
+        <Route path="/artists/:artistSlug" element={<ArtistRoute />} />
+        <Route path="/book" element={<BookingRoute />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
-      <FloatingWA hidden={isBookingPage} />
+      <FloatingWA hidden={page === 'booking'} />
     </div>
   );
+}
+
+export default function App() {
+  return <BrowserRouter><AppRoutes /></BrowserRouter>;
 }

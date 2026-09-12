@@ -35,9 +35,19 @@ export default function Nav({ onNavigate, currentPage }: NavProps) {
   }, [lastY]);
 
   useEffect(() => {
-    if (menuOpen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = '';
-    return () => { document.body.style.overflow = ''; };
+    if (!menuOpen) {
+      document.body.style.overflow = '';
+      return;
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', closeOnEscape);
+    };
   }, [menuOpen]);
 
   const handleNav = (page: Page) => {

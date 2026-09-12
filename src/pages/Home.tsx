@@ -284,7 +284,7 @@ function WorkSection({ onNavigate }: Props) {
               <div
                 key={i}
                 className={`relative overflow-hidden bg-[#1c1c1c] group cursor-pointer ${span}`}
-                onClick={() => setViewerData({ index: 0, artistId: item.artistId })}
+                onClick={() => setViewerData({ index: Math.max(0, artist?.gallery.findIndex(image => image.url.split('?')[0] === item.url.split('?')[0]) ?? 0), artistId: item.artistId })}
               >
                 <img
                   src={item.url}
@@ -323,11 +323,11 @@ function WorkSection({ onNavigate }: Props) {
       {viewerData && viewerArtist && (
         <ImageViewer
           images={viewerArtist.gallery}
-          index={0}
+          index={viewerData.index}
           artistName={viewerArtist.name}
           onClose={() => setViewerData(null)}
-          onPrev={() => {}}
-          onNext={() => {}}
+          onPrev={() => setViewerData(data => data ? { ...data, index: Math.max(0, data.index - 1) } : null)}
+          onNext={() => setViewerData(data => data ? { ...data, index: Math.min(viewerImages.length - 1, data.index + 1) } : null)}
           onBook={() => { setViewerData(null); onNavigate('booking', viewerData.artistId); window.scrollTo({ top: 0 }); }}
         />
       )}
@@ -357,7 +357,7 @@ function HomeCallSection({ onNavigate }: Props) {
             </p>
             <div className={`flex flex-col sm:flex-row gap-3 ${inView ? 'animate-fade-up delay-300' : 'opacity-0'}`}>
               <button
-                onClick={() => { onNavigate('booking'); window.scrollTo({ top: 0 }); }}
+                onClick={() => { onNavigate('booking', '__home-call__'); window.scrollTo({ top: 0 }); }}
                 className="bg-[#f5f5f2] text-[#111111] font-body font-600 text-[11px] tracking-[0.2em] uppercase px-7 py-3.5 hover:bg-white transition-colors"
               >
                 Book a Home Call →
@@ -479,7 +479,7 @@ function StudioSection({ onNavigate }: Props) {
                   Home Call requests available<br />across the United States.
                 </p>
                 <button
-                  onClick={() => { onNavigate('booking'); window.scrollTo({ top: 0 }); }}
+                  onClick={() => { onNavigate('booking', '__home-call__'); window.scrollTo({ top: 0 }); }}
                   className="text-[11px] tracking-[0.2em] uppercase font-body text-[#f5f5f2] border border-white/15 hover:border-white/35 hover:bg-white/05 transition-all px-5 py-2.5"
                 >
                   Request Home Call →
