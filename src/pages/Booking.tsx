@@ -1,24 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ARTISTS } from '../data/artists';
+import type { BookingRequest, BookingResult } from '../lib/supabase/createBooking';
 
 type ServiceType = 'studio' | 'home-call';
-type FormState = 'idle' | 'loading' | 'error';
+type FormState = 'idle' | 'loading' | 'error' | 'success';
 
 interface BookingProps {
   preselectedArtistId?: string | null;
   preselectedServiceType?: ServiceType;
 }
 
-async function submitBooking(_booking: unknown): Promise<never> {
-  throw new Error('Online booking submissions are not configured yet. Please contact the studio on WhatsApp.');
+const WA_NUMBER = '12125550147';
+const WA_HELP_URL = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi, I'd like help booking a tattoo consultation.")}`;
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_LENGTHS = { name: 120, email: 254, whatsapp: 32, city: 160, idea: 4000, placement: 120, size: 120 };
+// Backend field names mapped to form fields, so server-side validation errors appear under the matching input.
+const FORM_FIELDS: Record<string, string> = {
+  full_name: 'name',
+  email: 'email',
+  phone: 'whatsapp',
+  location: 'city',
+  tattoo_idea: 'idea',
+  placement: 'placement',
+  approximate_size: 'size',
+};
+
+// The Supabase client is loaded only when a visitor actually submits the form.
+async function submitBooking(booking: BookingRequest): Promise<BookingResult> {
+  try {
+    const { createBooking } = await import('../lib/supabase/createBooking');
+    return await createBooking(booking);
+  } catch {
+    return { ok: false };
+  }
+}
+
+function newSubmissionId() {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  // crypto.randomUUID is unavailable outside secure contexts (e.g. a LAN IP over http).
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
 export default function Booking({ preselectedArtistId, preselectedServiceType }: BookingProps) {
+  const navigate = useNavigate();
   const artist = preselectedArtistId ? ARTISTS.find(a => a.id === preselectedArtistId) : null;
   const [formState, setFormState] = useState<FormState>('idle');
+  const [reference, setReference] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>(preselectedServiceType ?? 'studio');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submissionError, setSubmissionError] = useState('');
+  const submitting = useRef(false);
+  const lastAttempt = useRef<{ details: string; submissionId: string } | null>(null);
 
   const [form, setForm] = useState({
     name: '',
@@ -47,27 +85,102 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
 
   const validate = () => {
     const e: Record<string, string> = {};
+    const phoneDigits = form.whatsapp.replace(/\D/g, '').length;
     if (!form.name.trim()) e.name = 'Required';
-    if (!form.email.trim() || !form.email.includes('@')) e.email = 'Valid email required';
-    if (!/^[+()\-\s\d]{7,}$/.test(form.whatsapp.trim())) e.whatsapp = 'Valid WhatsApp / phone required';
+    if (!EMAIL_PATTERN.test(form.email.trim())) e.email = 'Valid email required';
+    if (!/^[+()\-\s\d]+$/.test(form.whatsapp.trim()) || phoneDigits < 7 || phoneDigits > 15) e.whatsapp = 'Valid WhatsApp / phone required';
     if (!form.idea.trim()) e.idea = 'Tell us a little about your idea';
     if (serviceType === 'home-call' && !form.city.trim()) e.city = 'Required for Home Call';
+    for (const [key, max] of Object.entries(MAX_LENGTHS)) {
+      if (key === 'city' && serviceType !== 'home-call') continue;
+      if (!e[key] && form[key as keyof typeof MAX_LENGTHS].trim().length > max) e[key] = `Must be ${max} characters or fewer`;
+    }
     return e;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting.current) return;
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    const details = {
+      full_name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.whatsapp.trim(),
+      service_type: serviceType,
+      location: serviceType === 'home-call' ? form.city.trim() : null,
+      preferred_artist: ARTISTS.some(a => a.id === form.artistId) ? form.artistId : null,
+      tattoo_idea: form.idea.trim(),
+      placement: form.placement.trim() || null,
+      approximate_size: form.size.trim() || null,
+    };
+    // Retrying unchanged details reuses the submission id, so the backend returns the
+    // original reference instead of storing a duplicate lead.
+    const detailsKey = JSON.stringify(details);
+    const attempt = lastAttempt.current?.details === detailsKey
+      ? lastAttempt.current
+      : { details: detailsKey, submissionId: newSubmissionId() };
+    lastAttempt.current = attempt;
+
+    submitting.current = true;
     setFormState('loading');
     setSubmissionError('');
-    try {
-      await submitBooking({ ...form, serviceType });
-    } catch (error) {
-      setSubmissionError(error instanceof Error ? error.message : 'Unable to send your request.');
-      setFormState('error');
+    const result = await submitBooking({ ...details, submission_id: attempt.submissionId });
+    submitting.current = false;
+
+    if (result.ok) {
+      setReference(result.reference);
+      setFormState('success');
+      window.scrollTo({ top: 0 });
+      return;
     }
+
+    const fieldErrors: Record<string, string> = {};
+    for (const [field, message] of Object.entries(result.fields ?? {})) {
+      if (FORM_FIELDS[field]) fieldErrors[FORM_FIELDS[field]] = message;
+    }
+    if (Object.keys(fieldErrors).length) setErrors(fieldErrors);
+    setSubmissionError(Object.keys(fieldErrors).length
+      ? 'Please check the highlighted details and try again.'
+      : "We couldn't send your request. Your details are still here, so please try again.");
+    setFormState('error');
   };
+
+  const openWhatsApp = () => {
+    const msg = encodeURIComponent(`Hi, I just submitted tattoo consultation ${reference} through the Bang Private Tattoos website.`);
+    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank', 'noopener,noreferrer');
+  };
+
+  if (formState === 'success' && reference) {
+    return (
+      <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-5 py-20 text-center" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
+        <p className="text-[10px] tracking-[0.3em] uppercase text-[#858582] font-body mb-6">Consultation Received</p>
+        <h1 className="font-display font-900 text-[18vw] md:text-[10vw] lg:text-[7vw] uppercase leading-none tracking-tight text-[#f5f5f2] mb-6">
+          REQUEST<br />RECEIVED.
+        </h1>
+        <div className="inline-block border border-white/10 px-6 py-3 mb-8">
+          <p className="text-[10px] tracking-[0.25em] uppercase text-[#858582] font-body mb-1">Reference</p>
+          <p className="font-display font-700 text-2xl tracking-widest text-[#f5f5f2]">{reference}</p>
+        </div>
+        <p className="font-body text-[#b7b7b2] text-sm max-w-md leading-relaxed mb-10">
+          Your consultation request has been saved. Continue with our booking team on WhatsApp to discuss your tattoo, artist availability, scheduling, pricing, placement, and references.
+        </p>
+        <button
+          onClick={openWhatsApp}
+          className="bg-[#f5f5f2] text-[#111111] font-body font-600 text-[11px] tracking-[0.2em] uppercase px-8 py-4 hover:bg-white transition-colors mb-4"
+        >
+          Continue to WhatsApp →
+        </button>
+        <button
+          onClick={() => navigate('/')}
+          className="text-[11px] tracking-[0.15em] uppercase font-body text-[#858582] hover:text-[#f5f5f2] transition-colors"
+        >
+          Back to Studio
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#111111]" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
@@ -155,10 +268,10 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
             </Field>
 
             <div className="grid grid-cols-2 gap-5">
-              <Field label="Placement (optional)">
+              <Field label="Placement (optional)" error={errors.placement}>
                 <input value={form.placement} onChange={set('placement')} placeholder="e.g. forearm, back" className="w-full px-4 py-3.5 text-sm" />
               </Field>
-              <Field label="Approximate Size (optional)">
+              <Field label="Approximate Size (optional)" error={errors.size}>
                 <input value={form.size} onChange={set('size')} placeholder="e.g. palm-sized" className="w-full px-4 py-3.5 text-sm" />
               </Field>
             </div>
@@ -172,7 +285,12 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
             >
               {formState === 'loading' ? 'Sending Request...' : 'Continue to WhatsApp →'}
             </button>
-            {submissionError && <p role="alert" className="text-[10px] text-red-400 font-body text-center mt-4">{submissionError}</p>}
+            {submissionError && (
+              <p role="alert" className="text-[10px] text-red-400 font-body text-center mt-4">
+                {submissionError}{' '}
+                <a href={WA_HELP_URL} target="_blank" rel="noopener noreferrer" className="underline">Or message us on WhatsApp ↗</a>
+              </p>
+            )}
             <p className="text-[10px] text-[#858582] font-body text-center mt-4">
               Your information will be kept confidential and used only for booking purposes.
             </p>

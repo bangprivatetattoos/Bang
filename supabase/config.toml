@@ -1,0 +1,9 @@
+# Supabase CLI settings for Bang Private Tattoos.
+# Only values that differ from the CLI defaults are listed.
+project_id = "bang-private-tattoos"
+
+[functions.create-booking]
+# Public consultation endpoint. The browser calls it with the public anon /
+# publishable key, which is not a user session, so the gateway JWT check is off.
+# The function validates every request itself and writes with the service role.
+verify_jwt = false

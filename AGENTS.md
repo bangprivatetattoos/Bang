@@ -21,6 +21,9 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `package-lock.json` - npm lockfile; the single source of truth for installed dependency versions
 - `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
 - `.mise.toml` - Toolchain versions for Node.js and pnpm (pnpm is used only by the Figma Make platform scripts in `.figma/make/`, not by the project workflow)
+- `.env.example` - Names of the browser-safe environment variables; copy to `.env.local` (never commit real values or a service-role key)
+- `src/lib/supabase/` - Browser Supabase client (public anon key only) and the booking submission call
+- `supabase/` - Supabase CLI project: database migrations and the `create-booking` Edge Function that stores booking leads
 
 ## Package Manager
 
