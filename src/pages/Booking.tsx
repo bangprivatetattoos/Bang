@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ARTISTS } from '../data/artists';
+import { whatsappUrl } from '../data/siteContact';
+import { getAnalyticsSessionId, trackAnalytics } from '../analytics/client';
 import type { BookingRequest, BookingResult } from '../lib/supabase/createBooking';
 
 type ServiceType = 'studio' | 'home-call';
@@ -11,8 +13,7 @@ interface BookingProps {
   preselectedServiceType?: ServiceType;
 }
 
-const WA_NUMBER = '12125550147';
-const WA_HELP_URL = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent("Hi, I'd like help booking a tattoo consultation.")}`;
+const WA_HELP_URL = whatsappUrl("Hi, I'd like help booking a tattoo consultation.");
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_LENGTHS = { name: 120, email: 254, whatsapp: 32, city: 160, idea: 4000, placement: 120, size: 120 };
@@ -78,6 +79,10 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
     if (preselectedServiceType) setServiceType(preselectedServiceType);
   }, [preselectedServiceType]);
 
+  useEffect(() => {
+    trackAnalytics('booking_start', { entityType: 'service', entityId: preselectedServiceType ?? 'studio' });
+  }, []);
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }));
     setErrors(er => { const n = { ...er }; delete n[k]; return n; });
@@ -126,10 +131,11 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
     submitting.current = true;
     setFormState('loading');
     setSubmissionError('');
-    const result = await submitBooking({ ...details, submission_id: attempt.submissionId });
+    const result = await submitBooking({ ...details, submission_id: attempt.submissionId, analytics_session_id: getAnalyticsSessionId() });
     submitting.current = false;
 
     if (result.ok) {
+      trackAnalytics('booking_success', { entityType: 'service', entityId: serviceType });
       setReference(result.reference);
       setFormState('success');
       window.scrollTo({ top: 0 });
@@ -148,8 +154,10 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
   };
 
   const openWhatsApp = () => {
-    const msg = encodeURIComponent(`Hi, I just submitted tattoo consultation ${reference} through the Bang Private Tattoos website.`);
-    window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank', 'noopener,noreferrer');
+    // Only the backend-issued reference goes into the link, never the visitor's form details.
+    const url = whatsappUrl(`Hi, I just submitted tattoo consultation ${reference} through the BANG PRIVATE TATTOOS website.`);
+    trackAnalytics('whatsapp_click', { entityType: 'booking' });
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   if (formState === 'success' && reference) {
@@ -293,6 +301,12 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
             )}
             <p className="text-[10px] text-[#858582] font-body text-center mt-4">
               Your information will be kept confidential and used only for booking purposes.
+            </p>
+            <p className="text-[10px] text-[#858582] font-body text-center leading-relaxed mt-2">
+              By submitting this request, you acknowledge our{' '}
+              <Link to="/privacy" className="underline underline-offset-2 hover:text-[#f5f5f2] transition-colors">Privacy Policy</Link>{' '}
+              and{' '}
+              <Link to="/terms" className="underline underline-offset-2 hover:text-[#f5f5f2] transition-colors">Terms of Service</Link>.
             </p>
           </div>
         </form>

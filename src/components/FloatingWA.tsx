@@ -1,6 +1,6 @@
 import { useState } from 'react';
-
-const WA_NUMBER = '12125550147';
+import { whatsappUrl } from '../data/siteContact';
+import { trackAnalytics } from '../analytics/client';
 
 interface Props {
   hidden?: boolean;
@@ -8,14 +8,17 @@ interface Props {
 
 export default function FloatingWA({ hidden }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
-  const href = `https://wa.me/${WA_NUMBER}?text=Hi%2C%20I%20have%20a%20question%20about%20NOIR%20Studio.`;
+  const href = whatsappUrl('Hi, I have a question about BANG PRIVATE TATTOOS.');
 
   if (hidden) return null;
 
   return (
     <div
-      className="fixed z-[150]"
+      className={`floating-wa fixed z-[150] ${isHovered || isFocused || isPressed ? "floating-wa--interacting" : ""}`}
       style={{
         bottom: 'max(18px, calc(env(safe-area-inset-bottom) + 12px))',
         left: 'max(16px, calc(env(safe-area-inset-left) + 12px))',
@@ -25,10 +28,16 @@ export default function FloatingWA({ hidden }: Props) {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        onMouseEnter={() => setExpanded(true)}
-        onMouseLeave={() => setExpanded(false)}
-        aria-label="Chat on WhatsApp"
-        className="flex items-center gap-2.5 bg-[#171717] border border-white/10 hover:border-white/25 transition-all duration-300 rounded-full shadow-lg shadow-black/60 h-11 overflow-hidden"
+        onMouseEnter={() => { setIsHovered(true); setExpanded(true); }}
+        onMouseLeave={() => { setIsHovered(false); setExpanded(false); }}
+        onFocus={() => { setIsFocused(true); setExpanded(true); }}
+        onBlur={() => { setIsFocused(false); setExpanded(false); }}
+        onPointerDown={() => setIsPressed(true)}
+        onPointerUp={() => setIsPressed(false)}
+        onPointerCancel={() => setIsPressed(false)}
+        onClick={() => trackAnalytics('whatsapp_click', { entityType: 'whatsapp' })}
+        aria-label="Chat with BANG PRIVATE TATTOOS on WhatsApp"
+        className="floating-wa-button relative flex items-center gap-2.5 bg-[#171717] border border-white/10 hover:border-white/25 transition-all duration-300 rounded-full shadow-lg shadow-black/60 h-11"
         style={{ paddingLeft: '10px', paddingRight: expanded ? '16px' : '10px', width: expanded ? 'auto' : '44px' }}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="shrink-0">

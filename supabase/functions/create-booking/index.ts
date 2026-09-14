@@ -51,7 +51,14 @@ Deno.serve(async req => {
 
   const result = validateBooking(body);
   if (!result.ok) return json(400, { error: 'invalid_request', fields: result.fields });
-  const { lead } = result;
+  let { lead } = result;
+
+  // Analytics is optional for booking. Never fail a legitimate consultation
+  // because a visitor's anonymous session was unavailable or has expired.
+  if (lead.analytics_session_id) {
+    const session = await supabase.from('analytics_sessions').select('id').eq('id', lead.analytics_session_id).maybeSingle();
+    if (session.error || !session.data) lead = { ...lead, analytics_session_id: null };
+  }
 
   try {
     const { data, error } = await supabase.from('booking_leads').insert(lead).select('reference').single();

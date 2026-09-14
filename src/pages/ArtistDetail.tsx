@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ARTISTS } from '../data/artists';
 import { useInView } from '../hooks/useInView';
 import ImageViewer from '../components/ImageViewer';
+import { trackAnalytics } from '../analytics/client';
 
 interface Props {
   artistId: string;
@@ -67,14 +68,16 @@ export default function ArtistDetail({ artistId, onNavigate }: Props) {
               >
                 Book {artist.name.split(' ')[0]}
               </button>
-              <a
-                href={`https://instagram.com/${artist.instagram.replace('@', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[11px] tracking-[0.2em] uppercase font-body text-[#858582] border border-white/12 hover:border-white/30 hover:text-[#f5f5f2] transition-all px-6 py-3.5 text-center"
-              >
-                {artist.instagram} ↗
-              </a>
+              {artist.instagram && (
+                <a
+                  href={`https://instagram.com/${artist.instagram.replace('@', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] tracking-[0.2em] uppercase font-body text-[#858582] border border-white/12 hover:border-white/30 hover:text-[#f5f5f2] transition-all px-6 py-3.5 text-center"
+                >
+                  {artist.instagram} ↗
+                </a>
+              )}
             </div>
           </div>
 
@@ -109,7 +112,7 @@ export default function ArtistDetail({ artistId, onNavigate }: Props) {
               <div
                 key={i}
                 className="break-inside-avoid relative group cursor-pointer overflow-hidden bg-[#1c1c1c]"
-                onClick={() => setViewerIndex(i)}
+                onClick={() => { trackAnalytics('artist_gallery_open', { entityType: 'artist', entityId: artist.id, metadata: { artist_name: artist.name } }); setViewerIndex(i); }}
                 style={{ animationDelay: `${i * 0.08}s` }}
               >
                 <img

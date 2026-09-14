@@ -86,7 +86,7 @@ export default function Nav({ onNavigate, currentPage }: NavProps) {
             onClick={() => handleNav('home')}
             className="font-display font-900 text-xl tracking-[0.25em] uppercase text-[#f5f5f2] hover:text-white transition-colors"
           >
-            NOIR
+            BANG
           </button>
 
           {/* Desktop links */}
@@ -178,7 +178,7 @@ export default function Nav({ onNavigate, currentPage }: NavProps) {
         </nav>
         <div className="mt-auto px-8">
           <p className="text-[10px] tracking-[0.25em] uppercase text-[#858582] font-body mb-1">New York, NY</p>
-          <p className="text-[11px] text-[#b7b7b2] font-body">studio@noirstudio.com</p>
+          <p className="text-[11px] text-[#b7b7b2] font-body">BANG PRIVATE TATTOOS</p>
         </div>
       </div>
     </>

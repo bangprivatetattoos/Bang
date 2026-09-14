@@ -8,7 +8,7 @@ interface Props {
 function ArtistRow({ artist, index, onNavigate }: { artist: typeof ARTISTS[0]; index: number; onNavigate: (page: string, id?: string) => void }) {
   const { ref, inView } = useInView(0.08);
   const even = index % 2 === 0;
-  const isFeature = index === 2 || index === 8;
+  const isFeature = index === 8;
 
   if (isFeature) {
     return (
@@ -106,14 +106,16 @@ function ArtistRow({ artist, index, onNavigate }: { artist: typeof ARTISTS[0]; i
               Book This Artist
             </button>
           </div>
-          <a
-            href={`https://instagram.com/${artist.instagram.replace('@', '')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[10px] tracking-[0.15em] uppercase text-[#858582] hover:text-[#f5f5f2] transition-colors mt-4 font-body inline-block"
-          >
-            {artist.instagram} ↗
-          </a>
+          {artist.instagram && (
+            <a
+              href={`https://instagram.com/${artist.instagram.replace('@', '')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] tracking-[0.15em] uppercase text-[#858582] hover:text-[#f5f5f2] transition-colors mt-4 font-body inline-block"
+            >
+              {artist.instagram} ↗
+            </a>
+          )}
         </div>
       </div>
     </div>

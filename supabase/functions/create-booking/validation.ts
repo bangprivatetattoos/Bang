@@ -14,6 +14,7 @@ export interface BookingLead {
   tattoo_idea: string;
   placement: string | null;
   approximate_size: string | null;
+  analytics_session_id: string | null;
 }
 
 export type FieldErrors = Partial<Record<keyof BookingLead, string>>;
@@ -116,6 +117,9 @@ export function validateBooking(input: unknown): ValidationResult {
   const tattooIdea = readText(body, 'tattoo_idea', errors, true, true);
   const placement = readText(body, 'placement', errors, false);
   const approximateSize = readText(body, 'approximate_size', errors, false);
+  const analyticsSessionId = typeof body.analytics_session_id === 'string' && UUID_PATTERN.test(body.analytics_session_id)
+    ? body.analytics_session_id.toLowerCase()
+    : null;
 
   if (Object.keys(errors).length || !submissionId || !serviceType || !fullName || !email || !phone || !tattooIdea) {
     return { ok: false, fields: errors };
@@ -134,6 +138,7 @@ export function validateBooking(input: unknown): ValidationResult {
       tattoo_idea: tattooIdea,
       placement,
       approximate_size: approximateSize,
+      analytics_session_id: analyticsSessionId,
     },
   };
 }

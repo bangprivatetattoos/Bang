@@ -12,6 +12,7 @@ export interface BookingRequest {
   tattoo_idea: string;
   placement: string | null;
   approximate_size: string | null;
+  analytics_session_id?: string | null;
 }
 
 export type BookingResult = { ok: true; reference: string } | { ok: false; fields?: Record<string, string> };
