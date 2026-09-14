@@ -1,6 +1,6 @@
 import { classifyDevice, classifyPlatform, json, sameOrigin, sanitizeText, serverConfig, sourceHash } from "../lib/server-security.mjs";
 
-const EVENTS = new Set(["page_view", "artist_view", "artist_gallery_open", "book_artist_click", "portfolio_view", "portfolio_image_open", "booking_start", "booking_success", "whatsapp_click", "home_call_view", "home_call_click", "faq_open"]);
+const EVENTS = new Set(["page_view", "artist_view", "artist_gallery_open", "book_artist_click", "portfolio_view", "portfolio_image_open", "booking_start", "booking_success", "whatsapp_click", "whatsapp_handoff", "home_call_view", "home_call_click", "faq_open"]);
 const METADATA_KEYS = new Set(["artist_name"]);
 const MAX_BODY_BYTES = 8_000;
 

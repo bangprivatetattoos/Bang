@@ -20,6 +20,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-block: max(2rem, env(safe-area-inset-top));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -31,6 +32,8 @@ body {
   margin: 0;
   overflow-x: hidden;
 }
+
+#root { max-width: 100%; overflow-x: clip; }
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -134,6 +137,18 @@ input:focus, textarea:focus, select:focus {
   border-color: rgba(245,245,242,0.4);
 }
 input::placeholder, textarea::placeholder { color: #858582; }
+
+/* iOS Safari zooms focused text controls below 16px. These rules apply only
+   to the consultation form, preserving the approved desktop typography. */
+.booking-control {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  scroll-margin-block: 7rem;
+}
+@media (max-width: 767px) {
+  .booking-control { font-size: 16px; }
+}
 
 .safe-bottom { padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)); }
 .safe-left { padding-left: max(16px, calc(env(safe-area-inset-left) + 12px)); }

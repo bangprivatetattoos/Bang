@@ -1,6 +1,3 @@
-import { FunctionsHttpError } from '@supabase/supabase-js';
-import { supabase } from './client';
-
 export interface BookingRequest {
   submission_id: string;
   full_name: string;
@@ -21,18 +18,25 @@ const REQUEST_TIMEOUT_MS = 20_000;
 const REFERENCE_PATTERN = /^BPT-\d{2}-\d{6,}$/;
 
 export async function createBooking(request: BookingRequest): Promise<BookingResult> {
-  if (!supabase) {
-    console.error('Booking backend is not configured: set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch('/.netlify/functions/create-booking', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify(request),
+      signal: controller.signal,
+    });
+  } catch {
     return { ok: false };
+  } finally {
+    window.clearTimeout(timeout);
   }
-
-  const { data, error } = await supabase.functions.invoke('create-booking', { body: request, timeout: REQUEST_TIMEOUT_MS });
-
-  if (error) {
-    if (error instanceof FunctionsHttpError) {
-      const body = await error.context.json().catch(() => null);
-      if (body?.error === 'invalid_request' && body.fields) return { ok: false, fields: body.fields };
-    }
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (data?.error === 'invalid_request' && data.fields) return { ok: false, fields: data.fields };
     return { ok: false };
   }
 

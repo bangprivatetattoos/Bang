@@ -1,4 +1,4 @@
-export type AnalyticsEventName = "page_view" | "artist_view" | "artist_gallery_open" | "book_artist_click" | "portfolio_view" | "portfolio_image_open" | "booking_start" | "booking_success" | "whatsapp_click" | "home_call_view" | "home_call_click" | "faq_open";
+export type AnalyticsEventName = "page_view" | "artist_view" | "artist_gallery_open" | "book_artist_click" | "portfolio_view" | "portfolio_image_open" | "booking_start" | "booking_success" | "whatsapp_click" | "whatsapp_handoff" | "home_call_view" | "home_call_click" | "faq_open";
 
 const VISITOR_KEY = "bpt_visitor_id";
 const SESSION_KEY = "bpt_session";

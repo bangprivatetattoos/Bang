@@ -26,3 +26,6 @@ logs/
 
 # Exact Figma recovery archive; this is a backup, not active project source.
 Follow Prompt Instructions.zip
+
+# Local Netlify folder
+.netlify

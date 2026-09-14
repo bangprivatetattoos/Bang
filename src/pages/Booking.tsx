@@ -14,6 +14,9 @@ interface BookingProps {
 }
 
 const WA_HELP_URL = whatsappUrl("Hi, I'd like help booking a tattoo consultation.");
+const HANDOFF_DELAY_MS = 2_000;
+const HANDOFF_STORAGE_PREFIX = 'bpt_whatsapp_handoff_';
+const HANDOFF_ANALYTICS_STORAGE_PREFIX = 'bpt_whatsapp_handoff_analytics_';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_LENGTHS = { name: 120, email: 254, whatsapp: 32, city: 160, idea: 4000, placement: 120, size: 120 };
@@ -28,7 +31,7 @@ const FORM_FIELDS: Record<string, string> = {
   approximate_size: 'size',
 };
 
-// The Supabase client is loaded only when a visitor actually submits the form.
+// The booking endpoint module is loaded only when a visitor submits the form.
 async function submitBooking(booking: BookingRequest): Promise<BookingResult> {
   try {
     const { createBooking } = await import('../lib/supabase/createBooking');
@@ -56,6 +59,7 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
   const [serviceType, setServiceType] = useState<ServiceType>(preselectedServiceType ?? 'studio');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submissionError, setSubmissionError] = useState('');
+  const [handoffSeconds, setHandoffSeconds] = useState<number | null>(null);
   const submitting = useRef(false);
   const lastAttempt = useRef<{ details: string; submissionId: string } | null>(null);
 
@@ -82,6 +86,14 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
   useEffect(() => {
     trackAnalytics('booking_start', { entityType: 'service', entityId: preselectedServiceType ?? 'studio' });
   }, []);
+
+  const storageGet = (key: string) => {
+    try { return window.sessionStorage.getItem(key); } catch { return null; }
+  };
+
+  const storageSet = (key: string) => {
+    try { window.sessionStorage.setItem(key, '1'); } catch { /* Safari private mode can deny storage. */ }
+  };
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm(f => ({ ...f, [k]: e.target.value }));
@@ -154,15 +166,56 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
   };
 
   const openWhatsApp = () => {
-    // Only the backend-issued reference goes into the link, never the visitor's form details.
-    const url = whatsappUrl(`Hi, I just submitted tattoo consultation ${reference} through the BANG PRIVATE TATTOOS website.`);
-    trackAnalytics('whatsapp_click', { entityType: 'booking' });
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!reference) return;
+    const handoffKey = `${HANDOFF_STORAGE_PREFIX}${reference}`;
+    const analyticsKey = `${HANDOFF_ANALYTICS_STORAGE_PREFIX}${reference}`;
+    storageSet(handoffKey);
+    if (!storageGet(analyticsKey)) {
+      storageSet(analyticsKey);
+      trackAnalytics('whatsapp_handoff', { entityType: 'booking', entityId: reference });
+    }
+    const artistName = form.artistId ? ARTISTS.find(a => a.id === form.artistId)?.name ?? form.artistId : 'No preference';
+    const message = [
+      'Hi BANK PRIVATE TATTOOS,',
+      '',
+      'I just submitted a tattoo consultation through the website.',
+      '',
+      `Reference: ${reference}`,
+      `Name: ${form.name.trim()}`,
+      `Service: ${serviceType === 'home-call' ? 'Home Call' : 'Studio Appointment'}`,
+      `Preferred Artist: ${artistName}`,
+      ...(form.city.trim() ? [`Location: ${form.city.trim()}`] : []),
+      ...(form.placement.trim() ? [`Placement: ${form.placement.trim()}`] : []),
+      ...(form.size.trim() ? [`Approximate Size: ${form.size.trim()}`] : []),
+      '',
+      'Tattoo idea:',
+      form.idea.trim(),
+      '',
+      "I'd like to continue with my consultation.",
+    ].join('\n');
+    window.location.assign(whatsappUrl(message));
   };
+
+  useEffect(() => {
+    if (formState !== 'success' || !reference) return;
+    if (storageGet(`${HANDOFF_STORAGE_PREFIX}${reference}`)) {
+      setHandoffSeconds(null);
+      return;
+    }
+    setHandoffSeconds(2);
+    const startedAt = Date.now();
+    const countdown = window.setInterval(() => {
+      setHandoffSeconds(Math.max(1, Math.ceil((HANDOFF_DELAY_MS - (Date.now() - startedAt)) / 1_000)));
+    }, 200);
+    const handoff = window.setTimeout(() => {
+      if (!storageGet(`${HANDOFF_STORAGE_PREFIX}${reference}`)) openWhatsApp();
+    }, HANDOFF_DELAY_MS);
+    return () => { window.clearInterval(countdown); window.clearTimeout(handoff); };
+  }, [formState, reference]);
 
   if (formState === 'success' && reference) {
     return (
-      <div className="min-h-screen bg-[#111111] flex flex-col items-center justify-center px-5 py-20 text-center" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
+      <div className="min-h-[100dvh] bg-[#111111] flex flex-col items-center justify-center px-5 py-20 text-center" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
         <p className="text-[10px] tracking-[0.3em] uppercase text-[#858582] font-body mb-6">Consultation Received</p>
         <h1 className="font-display font-900 text-[18vw] md:text-[10vw] lg:text-[7vw] uppercase leading-none tracking-tight text-[#f5f5f2] mb-6">
           REQUEST<br />RECEIVED.
@@ -174,6 +227,11 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
         <p className="font-body text-[#b7b7b2] text-sm max-w-md leading-relaxed mb-10">
           Your consultation request has been saved. Continue with our booking team on WhatsApp to discuss your tattoo, artist availability, scheduling, pricing, placement, and references.
         </p>
+        {handoffSeconds !== null && (
+          <p className="text-[10px] tracking-[0.18em] uppercase text-[#858582] font-body -mt-5 mb-5" aria-live="polite">
+            Continuing to WhatsApp in {handoffSeconds} {handoffSeconds === 1 ? 'second' : 'seconds'}...
+          </p>
+        )}
         <button
           onClick={openWhatsApp}
           className="bg-[#f5f5f2] text-[#111111] font-body font-600 text-[11px] tracking-[0.2em] uppercase px-8 py-4 hover:bg-white transition-colors mb-4"
@@ -191,8 +249,8 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
   }
 
   return (
-    <div className="min-h-screen bg-[#111111]" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
-      <div className="max-w-[680px] mx-auto px-5 md:px-8 pb-24">
+    <div className="min-h-[100svh] bg-[#111111]" style={{ paddingTop: 'calc(max(80px, env(safe-area-inset-top)) + 40px)' }}>
+      <div className="max-w-[680px] min-w-0 mx-auto px-5 md:px-8 pb-24">
 
         {/* Artist context */}
         {artist && (
@@ -220,7 +278,7 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
           Tell us a few details below. Once your request is received, you can continue directly with our booking team through WhatsApp.
         </p>
 
-        <form onSubmit={handleSubmit} noValidate>
+        <form onSubmit={handleSubmit} noValidate className="min-w-0">
           {/* Service type */}
           <div className="mb-8">
             <p className="text-[10px] tracking-[0.25em] uppercase text-[#858582] font-body mb-3">Service Type</p>
@@ -245,24 +303,24 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
           {/* Fields */}
           <div className="flex flex-col gap-5">
             <Field label="Full Name" error={errors.name}>
-              <input value={form.name} onChange={set('name')} placeholder="Your full name" className="w-full px-4 py-3.5 text-sm" />
+              <input value={form.name} onChange={set('name')} placeholder="Your full name" className="booking-control w-full px-4 py-3.5" />
             </Field>
             <Field label="Email" error={errors.email}>
-              <input type="email" value={form.email} onChange={set('email')} placeholder="your@email.com" className="w-full px-4 py-3.5 text-sm" />
+              <input type="email" value={form.email} onChange={set('email')} placeholder="your@email.com" className="booking-control w-full px-4 py-3.5" />
             </Field>
             <Field label="WhatsApp / Phone" error={errors.whatsapp}>
-              <input type="tel" value={form.whatsapp} onChange={set('whatsapp')} placeholder="+1 (555) 000-0000" className="w-full px-4 py-3.5 text-sm" />
+              <input type="tel" value={form.whatsapp} onChange={set('whatsapp')} placeholder="+1 (555) 000-0000" className="booking-control w-full px-4 py-3.5" />
             </Field>
 
             {serviceType === 'home-call' && (
               <Field label="City / Location" error={errors.city}>
-                <input value={form.city} onChange={set('city')} placeholder="City, State" className="w-full px-4 py-3.5 text-sm" />
+                <input value={form.city} onChange={set('city')} placeholder="City, State" className="booking-control w-full px-4 py-3.5" />
               </Field>
             )}
 
             {!artist && (
               <Field label="Preferred Artist (optional)">
-                <select value={form.artistId} onChange={set('artistId')} className="w-full px-4 py-3.5 text-sm cursor-pointer">
+                <select value={form.artistId} onChange={set('artistId')} className="booking-control w-full px-4 py-3.5 cursor-pointer">
                   <option value="">No preference / Help me choose</option>
                   {ARTISTS.map(a => (
                     <option key={a.id} value={a.id}>{a.name} — {a.specialties[0]}</option>
@@ -272,15 +330,15 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
             )}
 
             <Field label="Tell Us About Your Tattoo Idea" error={errors.idea}>
-              <textarea value={form.idea} onChange={set('idea')} placeholder="Describe the concept, style, references, or anything that helps us understand your vision..." rows={5} className="w-full px-4 py-3.5 text-sm resize-none" />
+              <textarea value={form.idea} onChange={set('idea')} placeholder="Describe the concept, style, references, or anything that helps us understand your vision..." rows={5} className="booking-control w-full px-4 py-3.5 resize-none" />
             </Field>
 
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid min-w-0 grid-cols-1 min-[420px]:grid-cols-2 gap-5">
               <Field label="Placement (optional)" error={errors.placement}>
-                <input value={form.placement} onChange={set('placement')} placeholder="e.g. forearm, back" className="w-full px-4 py-3.5 text-sm" />
+                <input value={form.placement} onChange={set('placement')} placeholder="e.g. forearm, back" className="booking-control w-full px-4 py-3.5" />
               </Field>
               <Field label="Approximate Size (optional)" error={errors.size}>
-                <input value={form.size} onChange={set('size')} placeholder="e.g. palm-sized" className="w-full px-4 py-3.5 text-sm" />
+                <input value={form.size} onChange={set('size')} placeholder="e.g. palm-sized" className="booking-control w-full px-4 py-3.5" />
               </Field>
             </div>
           </div>
@@ -317,7 +375,7 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
-    <div>
+    <div className="booking-field min-w-0">
       <label className="block text-[10px] tracking-[0.2em] uppercase text-[#858582] font-body mb-1.5">{label}</label>
       {children}
       {error && <p role="alert" className="text-[11px] text-red-400 font-body mt-1">{error}</p>}
