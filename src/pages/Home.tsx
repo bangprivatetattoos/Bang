@@ -991,7 +991,7 @@ function Footer({ onNavigate, onOpenInsights }: Props) {
         </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-8 border-t border-white/05">
-          <p onClick={handleCopyrightClick} className="text-[10px] tracking-[0.1em] text-[#858582] font-body">© 2026 BANG PRIVATE TATTOOS. All rights reserved.</p>
+          <p onClick={handleCopyrightClick} className="text-[10px] tracking-[0.1em] text-[#858582] font-body select-none touch-manipulation">© 2026 BANG PRIVATE TATTOOS. All rights reserved.</p>
         </div>
       </div>
     </footer>

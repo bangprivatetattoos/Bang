@@ -36,6 +36,23 @@ export function sourceHash(context, request, secret) {
   return createHmac("sha256", secret).update(`${ip}\n${userAgent}`).digest("hex");
 }
 
+// Admin lockouts key on the client network alone: the User-Agent is attacker-controlled, and an
+// IPv6 client can rotate through its whole /64, so neither may grant a fresh set of PIN attempts.
+function networkKey(ip) {
+  if (!ip) return "unknown";
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
+  if (mapped) return mapped[1];
+  if (!ip.includes(":")) return ip;
+  const [head, tail] = ip.split("%")[0].split("::");
+  const left = head ? head.split(":") : []; const right = tail ? tail.split(":") : [];
+  const groups = tail === undefined ? left : [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill("0"), ...right];
+  return `${groups.slice(0, 4).map((group) => group.toLowerCase().padStart(4, "0")).join(":")}::/64`;
+}
+
+export function adminSourceHash(context, secret) {
+  return createHmac("sha256", secret).update(`admin-login\n${networkKey(context.ip)}`).digest("hex");
+}
+
 export async function hashPin(pin, salt, pepper) {
   const key = await scrypt(`${pin}:${pepper}`, salt, 64, SCRYPT_OPTIONS);
   return Buffer.from(key).toString("hex");

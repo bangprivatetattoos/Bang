@@ -1,6 +1,7 @@
 import { classifyDevice, classifyPlatform, json, sameOrigin, sanitizeText, serverConfig, sourceHash } from "../lib/server-security.mjs";
 
 const EVENTS = new Set(["page_view", "artist_view", "artist_gallery_open", "book_artist_click", "portfolio_view", "portfolio_image_open", "booking_start", "booking_success", "whatsapp_click", "home_call_view", "home_call_click", "faq_open"]);
+const METADATA_KEYS = new Set(["artist_name"]);
 const MAX_BODY_BYTES = 8_000;
 
 export default async (request, context) => {
@@ -28,7 +29,7 @@ export default async (request, context) => {
   if (existing.error) return json(500, { error: "server_error" });
   const sessionResult = existing.data ? await config.client.from("analytics_sessions").update({ last_seen_at: session.last_seen_at }).eq("id", sessionId) : await config.client.from("analytics_sessions").insert(session);
   if (sessionResult.error) return json(500, { error: "server_error" });
-  const safeMetadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata) ? Object.fromEntries(Object.entries(body.metadata).filter(([key, value]) => /^[a-z_]{1,40}$/.test(key) && typeof value === "string" && value.length <= 120)) : {};
+  const safeMetadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata) ? Object.fromEntries(Object.entries(body.metadata).filter(([key, value]) => METADATA_KEYS.has(key) && typeof value === "string" && value.length <= 120)) : {};
   const result = await config.client.from("analytics_events").insert({ client_event_id: clientEventId, session_id: sessionId, event_name: eventName, page_path: pagePath, entity_type: sanitizeText(body.entityType, 64), entity_id: sanitizeText(body.entityId, 160), metadata: safeMetadata });
   if (result.error && result.error.code !== "23505") return json(500, { error: "server_error" });
   return json(202, { ok: true });

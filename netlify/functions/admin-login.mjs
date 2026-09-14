@@ -1,4 +1,4 @@
-import { createSession, json, pinMatches, sameOrigin, serverConfig, sessionCookie, sourceHash } from "../lib/server-security.mjs";
+import { adminSourceHash, createSession, json, pinMatches, sameOrigin, serverConfig, sessionCookie } from "../lib/server-security.mjs";
 
 const MAX_BODY_BYTES = 512;
 
@@ -10,18 +10,19 @@ export default async (request, context) => {
   let body;
   try { const raw = await request.text(); if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return json(413, { error: "payload_too_large" }); body = JSON.parse(raw); } catch { return json(400, { error: "invalid_json" }); }
   const pin = typeof body?.pin === "string" ? body.pin : "";
-  const source = sourceHash(context, request, config.lockoutSecret);
-  const audit = (outcome) => config.client.from("admin_access_events").insert({ outcome, source_hash: source });
-  const { data: lock } = await config.client.from("admin_login_lockouts").select("locked_until").eq("source_hash", source).maybeSingle();
-  if (lock?.locked_until && new Date(lock.locked_until).getTime() > Date.now()) { await audit("locked"); return json(429, { error: "locked", lockedUntil: lock.locked_until }); }
   if (!/^\d{6}$/.test(pin)) return json(400, { error: "invalid_request" });
+  const source = adminSourceHash(context, config.lockoutSecret);
+  const audit = (outcome) => config.client.from("admin_access_events").insert({ outcome, source_hash: source });
   const { data: security, error } = await config.client.from("admin_security").select("pin_hash,pin_salt,security_version").eq("singleton", true).maybeSingle();
   if (error || !security) return json(503, { error: "admin_not_configured" });
+  // The attempt is counted atomically before the PIN is checked, so parallel requests cannot exceed five guesses per lock window.
+  const reservation = await config.client.rpc("reserve_admin_login_attempt", { p_source_hash: source });
+  const attempt = Array.isArray(reservation.data) ? reservation.data[0] : null;
+  if (reservation.error || !attempt) return json(503, { error: "server_error" });
+  if (!attempt.allowed) { await audit("locked"); return json(429, { error: "locked", lockedUntil: attempt.locked_until }); }
   if (!(await pinMatches(pin, security, config.pepper))) {
-    const failure = await config.client.rpc("record_admin_login_failure", { p_source_hash: source });
-    const info = Array.isArray(failure.data) ? failure.data[0] : null;
-    await audit(info?.locked_until ? "locked" : "failure");
-    return info?.locked_until ? json(429, { error: "locked", lockedUntil: info.locked_until }) : json(401, { error: "incorrect_pin", attemptsRemaining: info?.attempts_remaining ?? 0 });
+    await audit(attempt.locked_until ? "locked" : "failure");
+    return attempt.locked_until ? json(429, { error: "locked", lockedUntil: attempt.locked_until }) : json(401, { error: "incorrect_pin", attemptsRemaining: attempt.attempts_remaining });
   }
   await config.client.rpc("clear_admin_login_lockout", { p_source_hash: source });
   await audit("success");

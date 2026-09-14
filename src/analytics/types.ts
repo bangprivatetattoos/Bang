@@ -28,7 +28,7 @@ export interface StatePerformance { state: string; visitors: number; bookings: n
 export interface ArtistPerformance { artist: string; profileViews: number; galleryOpens: number; bookClicks: number; starts: number; leads: number; }
 export interface PortfolioPerformance { image: string; artist: string; views: number; clicks: number; artistVisits: number; bookings: number; }
 export interface DevicePerformance { device: string; visitors: number; conversions: number; color: string; }
-export interface ContentPerformance { page: string; views: number; engagement: string; starts: number; exitRate: number; }
+export interface ContentPerformance { page: string; views: number; starts: number; exitRate: number; }
 export interface FunnelStep { label: string; value: number; }
 export interface ActivityRow { id: string; dateTime: string; source: string; campaign: string; country: string; state: string; device: string; artist: string; event: string; converted: boolean; }
 
