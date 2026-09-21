@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import {
-  ARTIST_GALLERY_FOLDER, ARTIST_PORTRAIT_FOLDER, ARTISTS_SOURCE,
+  ARTIST_GALLERY_FOLDER, ARTIST_PORTRAIT_FOLDER, ARTIST_SOURCES,
   IMAGE_EXTENSIONS, NOTEWORTHY_EXTENSIONS, PROJECT_ROOT, SOURCES, VIDEO_EXTENSIONS,
 } from './config.mjs';
 
@@ -139,50 +139,21 @@ async function listFiles(absoluteFolder) {
 }
 
 /**
- * Reads the real artist records so portraits and galleries follow the data
- * rather than a second copy of it kept in this script.
+ * The artists and where their media sits, straight from configuration.
  *
- * `artists.ts` cannot be imported from Node — it uses `import.meta.glob` — so
- * the id and portrait path are read out of the source text.
+ * This used to parse `src/data/artists.ts` with regular expressions to work
+ * out which folders to read. That coupled the media tooling to the exact
+ * shape of React source: a renamed variable, or the removal of the
+ * `import.meta.glob` calls the production bundle no longer wants, would have
+ * made discovery quietly find fewer assets instead of failing loudly.
  */
-async function readArtists() {
-  const source = await fs.readFile(ARTISTS_SOURCE, 'utf8');
-
-  // A gallery folder is declared by its glob, not by the portrait path — one
-  // artist's portrait lives at the repository root rather than beside her
-  // gallery, so deriving the folder from the portrait would lose that gallery
-  // entirely. Follow the real chain instead:
-  //   <var>GalleryAssets = import.meta.glob('../../<FOLDER>/...')
-  //   const <CONST>: GalleryImage[] = Object.entries(<var>GalleryAssets)
-  //   { id: '<artist>', ..., gallery: <CONST> }
-  const globFolders = new Map();
-  const globPattern = /const\s+(\w+)\s*=\s*import\.meta\.glob<string>\('\.\.\/\.\.\/([^/']+)\//g;
-  let globMatch;
-  while ((globMatch = globPattern.exec(source)) !== null) {
-    globFolders.set(globMatch[1], globMatch[2]);
-  }
-
-  const constFolders = new Map();
-  const constPattern = /const\s+(\w+):\s*GalleryImage\[\]\s*=\s*Object\.entries\((\w+)\)/g;
-  let constMatch;
-  while ((constMatch = constPattern.exec(source)) !== null) {
-    const folder = globFolders.get(constMatch[2]);
-    if (folder) constFolders.set(constMatch[1], folder);
-  }
-
-  const artists = [];
-  const blockPattern = /\{\s*\n\s*id: '([^']+)',[\s\S]*?portrait: new URL\('\.\.\/\.\.\/([^']+)', import\.meta\.url\)\.href,[\s\S]*?gallery: (\w+),/g;
-  let match;
-  while ((match = blockPattern.exec(source)) !== null) {
-    const [, id, portraitPath, galleryConst] = match;
-    artists.push({
-      id,
-      portraitPath,
-      folder: constFolders.get(galleryConst) ?? null,
-      portraitFile: portraitPath.slice(portraitPath.lastIndexOf('/') + 1),
-    });
-  }
-  return artists;
+function readArtists() {
+  return ARTIST_SOURCES.map(artist => ({
+    id: artist.id,
+    portraitPath: artist.portrait,
+    folder: artist.folder,
+    portraitFile: artist.portrait.slice(artist.portrait.lastIndexOf('/') + 1),
+  }));
 }
 
 /** One discovered asset, before any Cloudinary call. */
@@ -283,7 +254,7 @@ export async function discoverMedia({ withHashes = true } = {}) {
   }
 
   // ── Artist portraits and galleries ───────────────────────────────────────
-  const artists = await readArtists();
+  const artists = readArtists();
   for (const artist of artists) {
     const portraitRelative = artist.portraitPath;
     try {

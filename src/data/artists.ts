@@ -1,4 +1,4 @@
-import { resolveMedia } from '../media/delivery';
+import { assetById, assetsIn, imageUrl, resolveMedia } from '../media/delivery';
 
 export interface GalleryImage {
   url: string;
@@ -37,6 +37,25 @@ export interface Artist {
  */
 const assetFileName = (path: string) => path.split('/').pop() ?? path;
 
+/**
+ * A gallery's images, from the generated manifest.
+ *
+ * Returns [source path, delivery url] pairs so the blocks below keep reading
+ * exactly as they did when this came from an `import.meta.glob` — same sort,
+ * same alt text, same orientation rule, same order. Only where the list comes
+ * from has changed.
+ *
+ * The globs were removed because Vite emits every file they match into the
+ * build, which shipped 6.2 MB of originals the browser never requested:
+ * Cloudinary serves them. `scripts/media/config.mjs` now records the folders
+ * for the media sync.
+ */
+const galleryEntries = (artistId: string): Array<[string, string]> =>
+  assetsIn('galleries')
+    .filter(asset => asset.artistId === artistId)
+    .map(asset => [asset.source, imageUrl(asset, 'gallery') ?? ''] as [string, string])
+    .filter(([, url]) => url !== '');
+
 const POOL: GalleryImage[] = [
   { url: 'https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?w=800&h=1100&fit=crop&auto=format', alt: 'Tattoo application process', orientation: 'portrait' },
   { url: 'https://images.unsplash.com/photo-1597852075234-fd721ac361d3?w=1200&h=800&fit=crop&auto=format', alt: 'Detailed arm tattoo', orientation: 'landscape' },
@@ -52,148 +71,88 @@ const POOL: GalleryImage[] = [
 
 const g = (indices: number[]) => indices.map(i => POOL[i]);
 
-const bangBangGalleryAssets = import.meta.glob<string>('../../Bang Bang/*.{jpg,jpeg,jfif,png}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const BANG_BANG_GALLERY: GalleryImage[] = Object.entries(bangBangGalleryAssets)
+const BANG_BANG_GALLERY: GalleryImage[] = galleryEntries('bang-bang')
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Bang Bang tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: /BangBangForever|Screenshot|Odell|Thierry|IMG|original|roses/i.test(path) ? 'landscape' : 'portrait',
   }));
 
-const solarGalleryAssets = import.meta.glob<string>('../../Solar/*.webp', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const SOLAR_GALLERY: GalleryImage[] = Object.entries(solarGalleryAssets)
+const SOLAR_GALLERY: GalleryImage[] = galleryEntries('solar')
   .filter(([path]) => !path.endsWith('/IMG_4930.webp'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Solar tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const jayShinGalleryAssets = import.meta.glob<string>('../../JAY SHIN/*.{jpg,jfif}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const JAY_SHIN_GALLERY: GalleryImage[] = Object.entries(jayShinGalleryAssets)
+const JAY_SHIN_GALLERY: GalleryImage[] = galleryEntries('jay-shin')
   .filter(([path]) => !path.endsWith('/JAY232.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Jay Shin tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const saraKoriGalleryAssets = import.meta.glob<string>('../../SARA Kori/*.{jpg,jfif}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const SARA_KORI_GALLERY: GalleryImage[] = Object.entries(saraKoriGalleryAssets)
+const SARA_KORI_GALLERY: GalleryImage[] = galleryEntries('sara-kori')
   .filter(([path]) => !path.endsWith('/Sara_Kori_Website_photo.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Sara Kori tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const victorGalleryAssets = import.meta.glob<string>('../../victor/*.{jpg,jfif}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const VICTOR_GALLERY: GalleryImage[] = Object.entries(victorGalleryAssets)
+const VICTOR_GALLERY: GalleryImage[] = galleryEntries('victor')
   .filter(([path]) => !path.endsWith('/Victor_Final_.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Victor tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const saintGalleryAssets = import.meta.glob<string>('../../saint/*.jpg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const SAINT_GALLERY: GalleryImage[] = Object.entries(saintGalleryAssets)
+const SAINT_GALLERY: GalleryImage[] = galleryEntries('saint')
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Saint tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const pawelGalleryAssets = import.meta.glob<string>('../../Pawel/*.jpg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const PAWEL_GALLERY: GalleryImage[] = Object.entries(pawelGalleryAssets)
+const PAWEL_GALLERY: GalleryImage[] = galleryEntries('pawel')
   .filter(([path]) => !path.endsWith('/pawel.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Pawel tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const teeGalleryAssets = import.meta.glob<string>('../../TEE/*.jpg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const TEE_GALLERY: GalleryImage[] = Object.entries(teeGalleryAssets)
+const TEE_GALLERY: GalleryImage[] = galleryEntries('tee')
   .filter(([path]) => !path.endsWith('/DSC00288.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Tee tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const nemoGalleryAssets = import.meta.glob<string>('../../nemo/*.webp', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const NEMO_GALLERY: GalleryImage[] = Object.entries(nemoGalleryAssets)
+const NEMO_GALLERY: GalleryImage[] = galleryEntries('nemo')
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Nemo tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-const natashiaGalleryAssets = import.meta.glob<string>('../../NATASHIA/*.{jpg,jpeg,jfif,png,webp}', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-});
-
-const NATASHIA_GALLERY: GalleryImage[] = Object.entries(natashiaGalleryAssets)
+const NATASHIA_GALLERY: GalleryImage[] = galleryEntries('natashia')
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
+    url,
     alt: `Natashia tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -316,11 +275,10 @@ export interface WorkImage {
 }
 
 // Reuses the gallery asset URL itself, so the viewer can locate the image inside the artist's gallery.
-const workImage = (assets: Record<string, string>, path: string, work: Omit<WorkImage, 'url'>): WorkImage[] => {
-  const local = assets[path];
-  const url = local ? resolveMedia(assetFileName(path), local, 'gallery') ?? local : local;
+const workImage = (fileName: string, work: Omit<WorkImage, 'url'>): WorkImage[] => {
+  const url = imageUrl(assetById(fileName), 'gallery');
   if (!url) {
-    console.error(`WORK image not found in ${work.artistId} gallery: ${path}`);
+    console.error(`WORK image is not in the media manifest: ${fileName}`);
     return [];
   }
   return [{ url, ...work }];
@@ -328,52 +286,52 @@ const workImage = (assets: Record<string, string>, path: string, work: Omit<Work
 
 // One tattoo per artist. Order and spans are tuned together so grid-auto-flow: dense packs every breakpoint into a gap-free block.
 export const WORK_IMAGES: WorkImage[] = [
-  ...workImage(bangBangGalleryAssets, '../../Bang Bang/0S6A1429.jpg', {
+  ...workImage('0S6A1429.jpg', {
     alt: 'Bang Bang — Buddha and rose forearm sleeve',
     artistId: 'bang-bang',
     layout: { base: [2, 5], md: [2, 5], lg: [2, 5] },
   }),
-  ...workImage(jayShinGalleryAssets, '../../JAY SHIN/Jshin1.jpg', {
+  ...workImage('Jshin1.jpg', {
     alt: 'Jay Shin — French bulldog portraits',
     artistId: 'jay-shin',
     layout: { base: [1, 4], md: [1, 4], lg: [1, 4] },
   }),
-  ...workImage(victorGalleryAssets, '../../victor/71681496_1024428594561374_337327927774706866_n.jpg', {
+  ...workImage('71681496_1024428594561374_337327927774706866_n.jpg', {
     alt: 'Victor — skeleton holding an anatomical heart',
     artistId: 'victor',
     layout: { base: [1, 4], md: [2, 7], lg: [1, 4] },
   }),
-  ...workImage(saintGalleryAssets, '../../saint/IMG_4063.jpg', {
+  ...workImage('IMG_4063.jpg', {
     alt: 'Saint — neck and back piece with cherubs and sacred heart',
     artistId: 'saint',
     layout: { base: [1, 6], md: [1, 5], lg: [1, 6] },
   }),
-  ...workImage(solarGalleryAssets, '../../Solar/IMG_5100.webp', {
+  ...workImage('IMG_5100.webp', {
     alt: 'Solar — ornamental spoon and knife',
     artistId: 'solar',
     layout: { base: [1, 6], md: [2, 13], lg: [1, 6] },
   }),
-  ...workImage(natashiaGalleryAssets, '../../NATASHIA/Z1.jpeg', {
+  ...workImage('Z1.jpeg', {
     alt: 'Natashia — butterfly and lotus with script',
     artistId: 'natashia',
     layout: { base: [1, 5], md: [1, 5], lg: [1, 5] },
   }),
-  ...workImage(pawelGalleryAssets, '../../Pawel/IMG_3008.jpg', {
+  ...workImage('IMG_3008.jpg', {
     alt: 'Pawel — Zeus statue in black and grey',
     artistId: 'pawel',
     layout: { base: [2, 10], md: [1, 5], lg: [1, 5] },
   }),
-  ...workImage(saraKoriGalleryAssets, '../../SARA Kori/96B4CFE2-E20F-438D-9053-9030D536D4D1.jpg', {
+  ...workImage('96B4CFE2-E20F-438D-9053-9030D536D4D1.jpg', {
     alt: 'Sara Kori — kneeling figure',
     artistId: 'sara-kori',
     layout: { base: [1, 5], md: [1, 5], lg: [1, 5] },
   }),
-  ...workImage(nemoGalleryAssets, '../../nemo/DSCF4661.webp', {
+  ...workImage('DSCF4661.webp', {
     alt: 'Nemo — four dog portraits in black and grey',
     artistId: 'nemo',
     layout: { base: [2, 5], md: [2, 4], lg: [2, 5] },
   }),
-  ...workImage(teeGalleryAssets, '../../TEE/IMG_0246.jpg', {
+  ...workImage('IMG_0246.jpg', {
     alt: 'Tee — watercolor house lifted by balloons',
     artistId: 'tee',
     layout: { base: [2, 10], md: [1, 5], lg: [1, 5] },

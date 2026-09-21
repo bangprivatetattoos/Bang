@@ -57,10 +57,33 @@ export const SOURCES = [
 ];
 
 /**
- * Artist portraits and galleries are derived from `src/data/artists.ts` at
- * discovery time rather than duplicated here, so the mapping cannot drift
- * away from the real artist records.
+ * Where each artist's media lives on disk.
+ *
+ * Declared here rather than parsed out of `src/data/artists.ts`, which is how
+ * this used to work. Reading folder names back out of React source with
+ * regular expressions meant the media tooling silently depended on the exact
+ * shape of application code: renaming a variable, or removing the
+ * `import.meta.glob` calls that Vite was emitting megabytes of unused images
+ * from, would have made discovery quietly find fewer assets rather than fail.
+ *
+ * `portrait` is repository-relative because one of them is not inside the
+ * artist's own folder.
+ *
+ * The ids match `src/data/artists.ts` exactly; they are also the Cloudinary
+ * public ids for the portraits, so they must not be renamed casually.
  */
-export const ARTISTS_SOURCE = path.join(PROJECT_ROOT, 'src', 'data', 'artists.ts');
+export const ARTIST_SOURCES = [
+  { id: 'bang-bang', folder: 'Bang Bang', portrait: 'Bang Bang/BBFINAL2018.webp' },
+  { id: 'solar', folder: 'Solar', portrait: 'Solar/IMG_4930.webp' },
+  { id: 'jay-shin', folder: 'JAY SHIN', portrait: 'JAY SHIN/JAY232.jpg' },
+  { id: 'sara-kori', folder: 'SARA Kori', portrait: 'SARA Kori/Sara_Kori_Website_photo.jpg' },
+  { id: 'victor', folder: 'victor', portrait: 'victor/Victor_Final_.jpg' },
+  { id: 'saint', folder: 'saint', portrait: 'saint/Screenshot_2024-08-24_at_4.27.20 PM.png' },
+  { id: 'pawel', folder: 'Pawel', portrait: 'Pawel/pawel.jpg' },
+  { id: 'tee', folder: 'TEE', portrait: 'TEE/DSC00288.jpg' },
+  { id: 'nemo', folder: 'nemo', portrait: 'nemo/DSC00408.jfif' },
+  // Her portrait sits at the repository root rather than beside her gallery.
+  { id: 'natashia', folder: 'NATASHIA', portrait: 'NTS241.jpg' },
+];
 export const ARTIST_PORTRAIT_FOLDER = `${CLOUDINARY_ROOT}/artists`;
 export const ARTIST_GALLERY_FOLDER = `${CLOUDINARY_ROOT}/galleries`;

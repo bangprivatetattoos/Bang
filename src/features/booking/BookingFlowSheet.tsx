@@ -17,6 +17,7 @@ import { recordBookingIntent } from '../video-feed/data/feedApi';
 import LocationAutocomplete from './LocationAutocomplete';
 import type { UsState } from './usStates';
 import FormHint from './FormHint';
+import { useFocusVisibility, useHasOverflowBelow, useKeyboardInset } from '../../hooks/useKeyboardViewport';
 
 export interface BookingFlowOptions {
   /**
@@ -300,6 +301,13 @@ export default function BookingFlowSheet({
   /** The price range block, revealed once a tattoo type has been chosen. */
   const priceRef = useRef<HTMLDivElement>(null);
 
+  const keyboardInset = useKeyboardInset(true);
+  // Brings a focused field above the keyboard by moving this container alone
+  // — never the document, and only when the field is actually covered.
+  useFocusVisibility(scrollRef, keyboardInset, true);
+  // Re-measured per step, because each step is a different length.
+  const hasMoreBelow = useHasOverflowBelow(scrollRef, step);
+
   /**
    * Every step starts at its own beginning.
    *
@@ -483,6 +491,20 @@ export default function BookingFlowSheet({
       </div>
 
       <div ref={scrollRef} className="feed-scroll flex-1 overflow-y-auto px-5 md:px-7 pb-2">
+        {/* Step two and four say what is needed next in one line, so a
+            disabled Continue is never the only explanation of what is
+            missing. An artist arrived at from a gallery is already chosen —
+            telling that visitor to choose one would be wrong. */}
+        {step === 2 && (
+          <FormHint tone={artist ? 'ready' : 'pending'}>
+            {artist
+              ? `${artist.name} is selected. Continue when you're ready.`
+              : "Choose the artist you'd like to work with."}
+          </FormHint>
+        )}
+        {step === 4 && !handedOff && (
+          <FormHint tone="ready">Review your selections, then continue to WhatsApp.</FormHint>
+        )}
         {/* ── Step 1 — Location ───────────────────────────────────────── */}
         {step === 1 && (
           <>
@@ -760,6 +782,20 @@ export default function BookingFlowSheet({
             </p>
           </div>
         )}
+      </div>
+
+      {/* Only shown when something is genuinely below the fold, and it leaves
+          as soon as the visitor has read far enough. Sits above the actions
+          rather than over them, so it never covers a control or the home
+          indicator. */}
+      <div
+        aria-hidden="true"
+        className="px-5 md:px-7 flex-shrink-0 overflow-hidden transition-all duration-300"
+        style={{ height: hasMoreBelow ? 22 : 0, opacity: hasMoreBelow ? 1 : 0 }}
+      >
+        <p className="text-[#858585] text-[10px] uppercase tracking-[0.22em] text-center">
+          Scroll to continue ↓
+        </p>
       </div>
 
       {/* Actions — always reachable, clear of the home indicator. */}

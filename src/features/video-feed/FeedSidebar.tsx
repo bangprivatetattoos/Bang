@@ -92,7 +92,7 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
           style={{ borderBottom: '1px solid #1c1c1c', paddingTop: 'max(48px, calc(env(safe-area-inset-top) + 20px))' }}
         >
           <div>
-            <p className="display-font text-[9px] tracking-[0.3em] text-[#626262] uppercase mb-1">Private Tattoo Experience</p>
+            <p className="display-font text-[9px] tracking-[0.3em] text-[#858585] uppercase mb-1">Private Tattoo Experience</p>
             <p className="display-font text-[22px] font-black text-[#f4f3ef] uppercase tracking-wide leading-tight">
               BANG PRIVATE<br />TATTOOS
             </p>
@@ -101,7 +101,7 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="feed-focusable text-[#858585] hover:text-[#f4f3ef] transition-colors grid place-items-center w-11 h-11 -mr-2"
+            className="feed-focusable text-[#b5b5b2] hover:text-[#f4f3ef] transition-colors grid place-items-center w-11 h-11 -mr-2"
           >
             <XIcon />
           </button>
@@ -115,8 +115,8 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
               onClick={() => onNavigate(to)}
               className="feed-focusable w-full flex items-center gap-4 px-4 py-3.5 min-h-11 rounded-xl text-left hover:bg-[#161616] transition-colors group"
             >
-              <span className="text-[#626262] group-hover:text-[#b5b5b2] transition-colors"><Icon /></span>
-              <span className="text-[#b5b5b2] group-hover:text-[#f4f3ef] text-[15px] transition-colors">{label}</span>
+              <span className="text-[#b5b5b2] group-hover:text-[#f4f3ef] transition-colors"><Icon /></span>
+              <span className="text-[#f4f3ef] text-[15px] transition-colors">{label}</span>
             </button>
           ))}
         </nav>
@@ -132,7 +132,7 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
         </div>
 
         <div className="px-4 pb-4 flex-shrink-0">
-          <p className="display-font text-[9px] tracking-[0.3em] text-[#626262] uppercase mb-2 px-1">Get in touch</p>
+          <p className="display-font text-[9px] tracking-[0.3em] text-[#858585] uppercase mb-2 px-1">Get in touch</p>
           <div className="flex gap-2">
             {social.map(({ name, Icon, href, onSelect }) => (
               <a
@@ -141,7 +141,7 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
                 target={href.startsWith('mailto:') ? undefined : '_blank'}
                 rel="noopener noreferrer"
                 onClick={onSelect}
-                className="feed-focusable flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 min-h-11 rounded-xl text-[#626262] hover:text-[#b5b5b2] transition-colors"
+                className="feed-focusable flex-1 flex flex-col items-center justify-center gap-1.5 py-2.5 min-h-11 rounded-xl text-[#b5b5b2] hover:text-[#f4f3ef] transition-colors"
                 style={{ border: '1px solid #222' }}
               >
                 <Icon />
@@ -157,7 +157,7 @@ export default function FeedSidebar({ onClose, onBook, onNavigate, onOpenInsight
               key={label}
               type="button"
               onClick={() => onNavigate(to)}
-              className="feed-focusable text-[#3a3a3a] text-[10px] tracking-wide hover:text-[#626262] transition-colors py-1"
+              className="feed-focusable text-[#858585] text-[10px] tracking-wide hover:text-[#b5b5b2] transition-colors py-1"
             >
               {label}
             </button>

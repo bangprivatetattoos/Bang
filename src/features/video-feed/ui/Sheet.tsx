@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useKeyboardInset } from '../../../hooks/useKeyboardViewport';
 import { XIcon } from './icons';
 
 interface SheetProps {
@@ -33,6 +34,12 @@ let openSheets = 0;
 export default function Sheet({ onClose, title, subtitle, label, size = 'default', children }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  /**
+   * Mobile Safari does not shrink the layout viewport for the keyboard — it
+   * slides the page — so a panel sized against dvh has its actions pushed off
+   * screen. The visual viewport reports what is really visible.
+   */
+  const keyboardInset = useKeyboardInset(true);
 
   useEffect(() => {
     openSheets += 1;
@@ -101,7 +108,12 @@ export default function Sheet({ onClose, title, subtitle, label, size = 'default
           background: 'linear-gradient(180deg, #1a1a1a 0%, #151515 100%)',
           border: '1px solid rgba(244,243,239,0.10)',
           boxShadow: '0 -18px 60px rgba(0,0,0,0.55)',
-          maxHeight: 'min(91dvh, 900px)',
+          // The panel shell stays put; only its ceiling moves, so the content
+          // inside scrolls rather than the sheet jumping as the keyboard
+          // animates.
+          maxHeight: keyboardInset > 0
+            ? `min(91dvh, 900px, calc(100dvh - ${keyboardInset}px - 12px))`
+            : 'min(91dvh, 900px)',
         }}
       >
         {/* Drag affordance — decorative; the sheet is dismissed by the close
