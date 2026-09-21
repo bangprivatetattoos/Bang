@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "format": "oxfmt"
+    "test": "node --test \"scripts/test/*.test.mjs\"",
+    "format": "oxfmt",
+    "media:check": "node scripts/media/sync.mjs check",
+    "media:sync": "node scripts/media/sync.mjs sync"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -22,6 +25,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.0.0",
+    "cloudinary": "^2.11.0",
     "oxfmt": "^0.2.0",
     "supabase": "^2.117.0",
     "tailwindcss": "^4.0.0",

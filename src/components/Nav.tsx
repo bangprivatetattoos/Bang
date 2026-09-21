@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type Page = 'home' | 'artists' | 'artist-detail' | 'booking';
 
@@ -15,6 +16,8 @@ const LINKS = [
 ];
 
 export default function Nav({ onNavigate, currentPage }: NavProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [scrollY, setScrollY] = useState(0);
   const [lastY, setLastY] = useState(0);
   const [visible, setVisible] = useState(true);
@@ -56,15 +59,14 @@ export default function Nav({ onNavigate, currentPage }: NavProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // The long-form site lives at /studio now that / is the immersive feed, so
+  // section links have to route there before scrolling.
   const handleAnchor = (href: string) => {
     setMenuOpen(false);
-    if (currentPage !== 'home') {
-      onNavigate('home');
-      setTimeout(() => {
-        document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } else {
+    if (location.pathname.replace(/\/+$/, '') === '/studio') {
       document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate(`/studio${href}`);
     }
   };
 
@@ -83,7 +85,8 @@ export default function Nav({ onNavigate, currentPage }: NavProps) {
         <div className="max-w-[1400px] mx-auto px-5 md:px-8 lg:px-12 flex items-center justify-between" style={{ height: compact ? '56px' : '72px', transition: 'height 0.3s ease' }}>
           {/* Logo */}
           <button
-            onClick={() => handleNav('home')}
+            onClick={() => { setMenuOpen(false); navigate('/'); }}
+            aria-label="BANG Private Tattoos — home"
             className="font-display font-900 text-xl tracking-[0.25em] uppercase text-[#f5f5f2] hover:text-white transition-colors"
           >
             BANG

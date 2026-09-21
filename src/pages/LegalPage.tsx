@@ -58,7 +58,7 @@ function PrivacyContent() {
     <>
       <Section title="Information we collect">
         <p>When you submit a booking request, we collect the information you provide in the form: your name, email address, WhatsApp number, city, requested service, preferred artist (if selected), tattoo idea, placement, and size. We also create a booking reference and may retain communications you send during the booking process. Please do not send unnecessary sensitive information through the form or WhatsApp.</p>
-        <p>When first-party analytics is configured, the site may also process a random visitor or session identifier, pages and meaningful events viewed, referrer information, campaign parameters, device and browser type, coarse country, state or region, city where available, and timestamps. We do not request precise GPS location. We do not use a Meta Pixel or Google Analytics unless this policy is updated to say so.</p>
+        <p>When analytics is configured, the site may also process a random visitor or session identifier, pages and meaningful events viewed, referrer information, campaign parameters, device and browser type, coarse country, state or region, city where available, and timestamps. We use Meta Pixel to measure page visits and successful booking leads; browser Pixel events do not include tattoo details, placement, size, email address, or phone number. We do not request precise GPS location.</p>
       </Section>
       <Section title="How we use information">
         <p>We use booking information to respond to tattoo inquiries, process consultation requests, identify the requested artist or service, discuss availability, scheduling, estimates, and tattoo requirements, provide customer support, maintain booking records, prevent fraud or abuse, operate and improve the website and services, and meet applicable legal obligations. First-party analytics may be used to understand website performance, advertising attribution, and booking conversion. A booking request is not an appointment confirmation.</p>
@@ -70,7 +70,7 @@ function PrivacyContent() {
         <p>Information may be processed by providers that help us run the booking workflow, host the site, or deliver a communication you choose to send. Current examples include Supabase for booking and database infrastructure, the website hosting provider, and WhatsApp/Meta for communications. Those providers handle information under their own terms and privacy practices. We may also disclose information when required by law or to protect rights, safety, and security.</p>
       </Section>
       <Section title="Selling or sharing personal information">
-        <p>BANG PRIVATE TATTOOS does not sell booking information and does not use a configured advertising pixel or other cross-context behavioral advertising tool. First-party analytics is used only for the purposes described above. If advertising, tracking, or sharing practices change, this policy must be updated before or when those practices are introduced.</p>
+        <p>BANG PRIVATE TATTOOS does not sell booking information. Meta Pixel may be used to measure website visits and successful booking leads for advertising attribution. First-party analytics is used only for the purposes described above. If advertising, tracking, or sharing practices change, this policy must be updated before or when those practices are introduced.</p>
       </Section>
       <Section title="Retention and security">
         <p>We retain personal information only for as long as reasonably needed for booking, customer service, recordkeeping, security, legal, or legitimate business purposes. We use reasonable administrative, technical, and organizational safeguards designed to protect personal information, but no internet transmission or storage system is completely secure.</p>
@@ -170,7 +170,7 @@ export default function LegalPage({ type }: LegalPageProps) {
           <p className="text-[10px] tracking-[0.3em] uppercase font-body text-[#858582] mb-4">{details.eyebrow}</p>
           <h1 id="legal-page-title" className="font-display text-5xl sm:text-6xl md:text-7xl leading-[0.9] uppercase tracking-tight text-[#f5f5f2]">{details.title}</h1>
           <p className="font-body text-sm md:text-base leading-relaxed text-[#b7b7b2] mt-6 max-w-2xl">{details.description}</p>
-          <p className="text-[10px] tracking-[0.15em] uppercase font-body text-[#858582] mt-6">Last updated: September 13, 2026</p>
+          <p className="text-[10px] tracking-[0.15em] uppercase font-body text-[#858582] mt-6">Last updated: September 15, 2026</p>
         </header>
         <div className="max-w-3xl space-y-10 md:space-y-12">
           {type === "accessibility" && <AccessibilityContent />}

@@ -13,6 +13,18 @@ export interface Artist {
   portrait: string;
   instagram?: string;
   gallery: GalleryImage[];
+  /**
+   * Whether this artist has confirmed capacity in the current week.
+   *
+   * Deliberately left unset. Availability is a factual claim about a real
+   * person's diary, and no availability data exists anywhere in this project
+   * or its database — so the booking flow will not state it until someone
+   * sets it here. An artist without this field shows the neutral, true
+   * status instead (they are on the active bookable roster); set it to `true`
+   * for an artist whose week is genuinely open, and the booking card upgrades
+   * to "Available this week".
+   */
+  availableThisWeek?: boolean;
 }
 
 const POOL: GalleryImage[] = [

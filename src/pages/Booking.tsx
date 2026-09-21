@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ARTISTS } from '../data/artists';
 import { whatsappUrl } from '../data/siteContact';
 import { getAnalyticsSessionId, trackAnalytics } from '../analytics/client';
+import { trackMetaLead } from '../analytics/metaPixel';
 import type { BookingRequest, BookingResult } from '../lib/supabase/createBooking';
 
 type ServiceType = 'studio' | 'home-call';
@@ -148,6 +149,7 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
 
     if (result.ok) {
       trackAnalytics('booking_success', { entityType: 'service', entityId: serviceType });
+      trackMetaLead(result.metaEventId);
       setReference(result.reference);
       setFormState('success');
       window.scrollTo({ top: 0 });
@@ -176,7 +178,7 @@ export default function Booking({ preselectedArtistId, preselectedServiceType }:
     }
     const artistName = form.artistId ? ARTISTS.find(a => a.id === form.artistId)?.name ?? form.artistId : 'No preference';
     const message = [
-      'Hi BANK PRIVATE TATTOOS,',
+      'Hi BANG PRIVATE TATTOOS,',
       '',
       'I just submitted a tattoo consultation through the website.',
       '',

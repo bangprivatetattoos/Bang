@@ -29,3 +29,7 @@ Follow Prompt Instructions.zip
 
 # Local Netlify folder
 .netlify
+
+# Cloudinary media sync keeps its state and generated manifest in the repo
+# on purpose (they stop two machines uploading the same file twice), so
+# nothing is ignored here. Credentials live in .env.local, already ignored.

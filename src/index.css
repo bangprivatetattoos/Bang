@@ -153,3 +153,259 @@ input::placeholder, textarea::placeholder { color: #858582; }
 .safe-bottom { padding-bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)); }
 .safe-left { padding-left: max(16px, calc(env(safe-area-inset-left) + 12px)); }
 .nav-safe-top { padding-top: max(0px, env(safe-area-inset-top)); }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Immersive video feed — design tokens and motion.
+   Everything here is scoped to `.feed-root` (or a feed-only class) so the
+   legacy site, the artist pages and the protected analytics screens keep
+   their established typography, scrollbars and scroll behaviour.
+   ────────────────────────────────────────────────────────────────────────── */
+.feed-root {
+  /* Layout tokens. Every fixed control positions against these rather than
+     against hard-coded pixels, so one set of rules covers every device.
+
+     --feed-safe-top adds spacing ON TOP of the inset rather than max()-ing
+     against it: on a notch or Dynamic Island device the inset only describes
+     where the hardware ends, so sitting exactly at it still reads as touching
+     the island. */
+  --feed-safe-top: calc(max(10px, env(safe-area-inset-top, 0px)) + 12px);
+  --feed-safe-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  /* Measured height of the bottom CTA row (min-h-11 button + its padding). */
+  --feed-bottom-bar: 60px;
+  /* Everything that must clear the bottom CTA anchors against this. */
+  --feed-bottom-inset: calc(var(--feed-safe-bottom) + var(--feed-bottom-bar));
+
+  --feed-accent: #ff4d78;
+
+  --feed-bg: #080808;
+  --feed-bg-raised: #101010;
+  --feed-bg-elevated: #161616;
+  --feed-surface: #1a1a1a;
+  --feed-text: #f4f3ef;
+  --feed-text-secondary: #b5b5b2;
+  --feed-text-muted: #858585;
+  --feed-text-faint: #626262;
+  --feed-border: #383838;
+  --feed-border-strong: #575757;
+  --feed-border-subtle: #252525;
+
+  background: var(--feed-bg);
+  color: var(--feed-text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+/* The feed owns the viewport; the page behind it must not scroll with it. */
+body.feed-active { overflow: hidden; overscroll-behavior: none; }
+/* A sheet owns the viewport while it is open, including on the conventional
+   pages, which are otherwise free to scroll. */
+body.sheet-open { overflow: hidden; }
+
+.feed-root .feed-scroll::-webkit-scrollbar { display: none; }
+.feed-root .feed-scroll { scrollbar-width: none; }
+
+.display-font { font-family: 'Barlow Condensed', sans-serif; }
+
+/* Inputs inside the feed opt out of the global chrome and back into the
+   Figma sheet treatment. 16px keeps iOS Safari from zooming on focus. */
+.feed-root input,
+.feed-root textarea,
+.feed-root select {
+  background: #161616;
+  border: 1px solid var(--feed-border);
+  border-radius: 12px;
+  color: var(--feed-text);
+  font-size: 16px;
+  line-height: 1.4;
+}
+.feed-root input:focus,
+.feed-root textarea:focus,
+.feed-root select:focus { border-color: var(--feed-border-strong); }
+.feed-root input::placeholder,
+.feed-root textarea::placeholder { color: #3a3a3a; }
+
+@keyframes feedTicker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes feedSwipeHint {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50%      { transform: translateY(-10px); opacity: 1; }
+}
+@keyframes feedFadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes feedSlideFromLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes feedSlideFromBottom {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes feedReactionPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+@keyframes feedDropIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-feed-ticker        { animation: feedTicker 22s linear infinite; }
+.animate-feed-swipe-hint    { animation: feedSwipeHint 1.5s ease-in-out infinite; }
+.animate-feed-fade-in-up    { animation: feedFadeInUp 0.28s ease-out forwards; }
+.animate-feed-slide-left    { animation: feedSlideFromLeft 0.28s cubic-bezier(0.16,1,0.3,1); }
+.animate-feed-slide-bottom  { animation: feedSlideFromBottom 0.32s cubic-bezier(0.16,1,0.3,1); }
+.animate-feed-reaction      { animation: feedReactionPulse 0.28s ease-out; }
+.animate-feed-drop-in       { animation: feedDropIn 0.2s ease-out forwards; }
+
+/* Visitors who prefer reduced motion get the carousel and ticker as static
+   strips rather than perpetual movement. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-feed-ticker,
+  .animate-feed-swipe-hint,
+  .animate-feed-reaction { animation: none !important; }
+}
+
+.feed-focusable:focus-visible {
+  outline: 2px solid var(--feed-text);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+/* ── Feed control chrome ──────────────────────────────────────────────────
+   Controls sit over footage that can be white, skin-toned, black or
+   high-contrast, so they carry their own legibility rather than relying on
+   the video behind them. Glass, not opaque discs: the footage stays visible.
+   ────────────────────────────────────────────────────────────────────────── */
+.feed-glass-control {
+  background: rgba(8, 8, 8, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.30);
+}
+
+/* The artist avatar and studio monogram carry a stronger off-white ring, so
+   the face reads as a deliberate control rather than part of the footage. */
+.feed-avatar-ring {
+  border: 2px solid rgba(244, 243, 239, 0.82);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Small text on the rail needs the same treatment at text scale. */
+.feed-control-label {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+/* The action rail: anchored above the bottom CTA, bottom-aligned with the
+   caption, never vertically centred. Gaps tighten on short viewports so the
+   rail cannot reach up into the header on a 375x667 screen. */
+.feed-rail {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--feed-bottom-inset) + 8px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+@media (max-height: 700px) {
+  .feed-rail { gap: 12px; }
+}
+@media (min-width: 768px) {
+  .feed-rail { right: 24px; gap: 22px; bottom: calc(var(--feed-bottom-inset) + 28px); }
+}
+
+/* Narrow edge fades behind the rail and the caption/CTA band. Deliberately
+   local: a single overlay across the whole frame would dull the footage. */
+.feed-rail-scrim {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 140px;
+  height: 62%;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(to left, rgba(8, 8, 8, 0.42), rgba(8, 8, 8, 0));
+}
+.feed-bottom-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 34%;
+  pointer-events: none;
+  z-index: 5;
+  background: linear-gradient(to top, rgba(8, 8, 8, 0.82), rgba(8, 8, 8, 0));
+}
+
+/* Tap-to-pause surface. Covers the footage only; the header, rail, caption
+   and CTAs sit above it, so tapping a control never toggles playback. */
+.feed-tap-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.feed-tap-layer:focus-visible {
+  outline: 2px solid var(--feed-text);
+  outline-offset: -6px;
+}
+
+@keyframes feedPauseIndicator {
+  from { opacity: 0; transform: scale(0.86); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.feed-pause-indicator { animation: feedPauseIndicator 0.18s ease-out both; }
+
+/* ── Reaction ─────────────────────────────────────────────────────────────
+   A short, warm pop rather than a cartoon bounce. The ring is a single
+   expanding stroke that fades out; both are suppressed under
+   prefers-reduced-motion by the global rule further up this file.
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes feedHeartPop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.32); }
+  55%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+@keyframes feedHeartGlow {
+  0%   { opacity: 0.55; transform: scale(0.7); }
+  100% { opacity: 0; transform: scale(2.1); }
+}
+.animate-feed-heart-pop {
+  /* The pop is feedback for the tap itself, so it carries the accent even
+     before the reaction has been confirmed by the server. The persistent
+     filled state is driven by stored data, not by this. */
+  color: var(--feed-accent);
+  animation: feedHeartPop 460ms cubic-bezier(0.22, 1.2, 0.36, 1);
+  filter: drop-shadow(0 0 8px rgba(255, 77, 120, 0.55));
+}
+.feed-heart-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--feed-accent);
+  pointer-events: none;
+  animation: feedHeartGlow 520ms ease-out forwards;
+}
+
+/* ── Location autocomplete ────────────────────────────────────────────── */
+.feed-suggestions {
+  max-height: 232px;
+  overflow-y: auto;
+  background: #101010;
+  border: 1px solid var(--feed-border);
+  border-radius: 12px;
+}
+.feed-suggestion[aria-selected='true'] {
+  background: #1e1e1e;
+}

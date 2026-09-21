@@ -5,6 +5,7 @@ import { siteContact, whatsappUrl } from '../data/siteContact';
 import { useInView } from '../hooks/useInView';
 import ImageViewer from '../components/ImageViewer';
 import { trackAnalytics } from '../analytics/client';
+import { useHiddenAdminEntrance } from '../hooks/useHiddenAdminEntrance';
 
 type Page = 'home' | 'artists' | 'artist-detail' | 'booking';
 
@@ -662,7 +663,7 @@ function HomeCallSection({ onNavigate }: Props) {
     if (inView) trackAnalytics('home_call_view', { entityType: 'service', entityId: 'home-call' });
   }, [inView]);
   return (
-    <section className="bg-[#111111] border-t border-white/05">
+    <section id="home-call" className="bg-[#111111] border-t border-white/05">
       <div ref={ref} className="max-w-[1400px] mx-auto px-5 md:px-8 lg:px-12 py-24 md:py-32">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Text */}
@@ -906,22 +907,9 @@ function FinalCTA({ onNavigate }: Props) {
 
 /* ── Footer ── */
 function Footer({ onNavigate, onOpenInsights }: Props) {
-  const insightClicks = useRef(0);
-  const insightWindowStarted = useRef<number | null>(null);
-
-  const handleCopyrightClick = () => {
-    const now = Date.now();
-    if (insightWindowStarted.current === null || now - insightWindowStarted.current > 5000) {
-      insightWindowStarted.current = now;
-      insightClicks.current = 0;
-    }
-    insightClicks.current += 1;
-    if (insightClicks.current === 5) {
-      insightClicks.current = 0;
-      insightWindowStarted.current = null;
-      onOpenInsights?.();
-    }
-  };
+  // Shared with the video feed's sidebar, so both surfaces keep the identical
+  // five-click entrance to the protected analytics dashboard.
+  const handleCopyrightClick = useHiddenAdminEntrance(onOpenInsights);
 
   return (
     <footer className="bg-[#111111] border-t border-white/06" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom))' }}>

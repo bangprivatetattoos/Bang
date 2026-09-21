@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { json, sameOrigin } from "../lib/server-security.mjs";
 import { validateBooking } from "../lib/booking-validation.mjs";
+import { metaLeadEventId, sendMetaLead } from "../lib/meta-capi.mjs";
 
 const MAX_BODY_BYTES = 32_000;
 const ADMIN_NOTIFICATION_EMAIL = "bangprivatetattoos@gmail.com";
@@ -25,7 +26,7 @@ function bookingConfig() {
     user: process.env.SMTP_USER,
     password: process.env.SMTP_APP_PASSWORD,
     fromEmail: process.env.SMTP_FROM_EMAIL,
-    fromName: process.env.SMTP_FROM_NAME || "BANK PRIVATE TATTOOS",
+    fromName: process.env.SMTP_FROM_NAME || "BANG PRIVATE TATTOOS",
     recipient: process.env.ADMIN_NOTIFICATION_EMAIL?.trim().toLowerCase(),
   };
   return {
@@ -49,7 +50,7 @@ function submittedAt(value) {
 }
 function emailText(lead) {
   const lines = [
-    "BANK PRIVATE TATTOOS",
+    "BANG PRIVATE TATTOOS",
     "NEW CONSULTATION",
     "",
     `Reference: ${lead.reference}`,
@@ -172,5 +173,15 @@ export default async (request) => {
   } else if (storedLead.notification_status === "pending") {
     await notifyLead(config.client, config.smtp, storedLead);
   }
-  return json(inserted ? 201 : 200, { reference: storedLead.reference });
+  const metaEventId = metaLeadEventId(storedLead.reference);
+  if (inserted) {
+    try {
+      await sendMetaLead({ reference: storedLead.reference, eventSourceUrl: request.headers.get("origin") ?? "https://bangprivatetattoos.netlify.app" });
+    } catch (error) {
+      // A Meta outage must not undo a confirmed booking. The browser Lead uses
+      // the same event id and will deduplicate when CAPI delivery succeeds.
+      console.error("Meta CAPI Lead failed", storedLead.reference, error instanceof Error ? error.message : "unknown");
+    }
+  }
+  return json(inserted ? 201 : 200, { reference: storedLead.reference, meta_event_id: metaEventId });
 };

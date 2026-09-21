@@ -12,7 +12,7 @@ export interface BookingRequest {
   analytics_session_id?: string | null;
 }
 
-export type BookingResult = { ok: true; reference: string } | { ok: false; fields?: Record<string, string> };
+export type BookingResult = { ok: true; reference: string; metaEventId: string } | { ok: false; fields?: Record<string, string> };
 
 const REQUEST_TIMEOUT_MS = 20_000;
 const REFERENCE_PATTERN = /^BPT-\d{2}-\d{6,}$/;
@@ -41,7 +41,9 @@ export async function createBooking(request: BookingRequest): Promise<BookingRes
   }
 
   // Only a reference produced by the database is ever shown to the visitor.
-  return typeof data?.reference === 'string' && REFERENCE_PATTERN.test(data.reference)
-    ? { ok: true, reference: data.reference }
+  if (typeof data?.reference !== 'string' || !REFERENCE_PATTERN.test(data.reference)) return { ok: false };
+  const expectedMetaEventId = `bpt_lead_${data.reference}`;
+  return data?.meta_event_id === expectedMetaEventId
+    ? { ok: true, reference: data.reference, metaEventId: expectedMetaEventId }
     : { ok: false };
 }
