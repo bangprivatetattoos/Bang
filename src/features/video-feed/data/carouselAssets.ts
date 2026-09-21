@@ -163,6 +163,51 @@ export interface CarouselBatch {
   cards: CarouselCard[];
 }
 
+/** Batches already requested, so approaching an interlude twice costs nothing. */
+const warmedBatches = new Set<number>();
+
+/**
+ * Fetches a carousel batch's images before the visitor reaches it.
+ *
+ * Called a couple of clips ahead, so the interlude opens on decoded images
+ * rather than empty frames. The first three carry the visible cards and are
+ * requested immediately at high priority; the rest wait for idle time, because
+ * ten image downloads must never compete with the clip still playing.
+ */
+export function preloadCarouselBatch(interludeIndex: number): void {
+  if (typeof window === 'undefined' || warmedBatches.has(interludeIndex)) return;
+  warmedBatches.add(interludeIndex);
+
+  const { cards } = getCarouselBatch(interludeIndex);
+  if (cards.length === 0) return;
+
+  const request = (card: CarouselCard, priority: 'high' | 'low') => {
+    const image = new Image();
+    // Progressive enhancement: unsupported in Safari, where it is simply
+    // ignored and the fetch still happens.
+    if ('fetchPriority' in image) {
+      (image as HTMLImageElement & { fetchPriority: string }).fetchPriority = priority;
+    }
+    image.decoding = 'async';
+    image.addEventListener('error', () => {
+      // Reported rather than hidden: a carousel image that will not load is a
+      // delivery problem worth seeing, and the interlude handles it visually.
+      console.warn(`[carousel] image failed to preload: ${card.id}`);
+    });
+    image.src = card.url;
+  };
+
+  const visible = cards.slice(0, 3);
+  const rest = cards.slice(3);
+  for (const card of visible) request(card, 'high');
+
+  if (rest.length === 0) return;
+  const idle = (window as Window & { requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => void }).requestIdleCallback;
+  const later = () => { for (const card of rest) request(card, 'low'); };
+  if (idle) idle(later, { timeout: 4000 });
+  else window.setTimeout(later, 1200);
+}
+
 export function getCarouselBatch(interludeIndex: number): CarouselBatch {
   if (BATCH_RANGES.length === 0) return { id: 'batch-0', index: 0, cards: [] };
 

@@ -16,6 +16,13 @@ export interface FeedVideo {
    * is nothing local to fall back to there. Cloudinary is the only source.
    */
   localSrc: string | null;
+  /**
+   * A still of the clip's first frame, from Cloudinary.
+   *
+   * Shown while the clip buffers, so a swipe lands on the image the video is
+   * about to start on rather than on an empty frame.
+   */
+  poster: string | null;
   /** Original filename, kept so mappings can be authored against what is on disk. */
   fileName: string;
   /**

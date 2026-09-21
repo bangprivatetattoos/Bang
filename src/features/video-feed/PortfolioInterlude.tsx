@@ -43,6 +43,13 @@ export default function PortfolioInterlude({
   interludeIndex, onForward, onBackward, onOpenCard, onEvent,
 }: Props) {
   const [batch] = useState<CarouselBatch>(() => getCarouselBatch(interludeIndex));
+  /**
+   * Cards whose image would not load.
+   *
+   * One bad asset must not take the interlude down with it, and a broken
+   * image icon in a portfolio strip reads worse than a quiet placeholder.
+   */
+  const [failed, setFailed] = useState<Set<string>>(() => new Set());
   const [active, setActive] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const pausedUntil = useRef(0);
@@ -225,15 +232,28 @@ export default function PortfolioInterlude({
               marginRight: index === batch.cards.length - 1 ? 'max(20px, calc(50vw - 116px))' : undefined,
             }}
           >
-            <img
-              src={card.url}
-              alt=""
-              // Only the neighbourhood is fetched eagerly, so an interlude
-              // never stalls the gap between two videos.
-              loading={Math.abs(index - active) <= 2 ? 'eager' : 'lazy'}
-              decoding="async"
-              className="w-full h-full object-cover"
-            />
+            {failed.has(card.id) ? (
+              // A brand-dark field rather than a broken-image icon.
+              <span
+                aria-hidden="true"
+                className="absolute inset-0"
+                style={{ background: 'radial-gradient(120% 90% at 50% 30%, #1d1d1d 0%, #141414 60%, #0e0e0e 100%)' }}
+              />
+            ) : (
+              <img
+                src={card.url}
+                alt=""
+                // Only the neighbourhood is fetched eagerly, so an interlude
+                // never stalls the gap between two videos.
+                loading={Math.abs(index - active) <= 2 ? 'eager' : 'lazy'}
+                decoding="async"
+                onError={() => {
+                  console.warn(`[carousel] image failed to load: ${card.id}`);
+                  setFailed(current => (current.has(card.id) ? current : new Set(current).add(card.id)));
+                }}
+                className="w-full h-full object-cover"
+              />
+            )}
             <span className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 50%)' }} />
             {card.category && (
               <span className="absolute bottom-3 left-3 right-3 text-left">

@@ -3,10 +3,6 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, usePa
 import Nav from './components/Nav';
 import FloatingWA from './components/FloatingWA';
 import BackToTop from './components/BackToTop';
-import Home from './pages/Home';
-import Artists from './pages/Artists';
-import ArtistDetail from './pages/ArtistDetail';
-import LegalPage from './pages/LegalPage';
 import VideoFeedPage from './features/video-feed/VideoFeedPage';
 import { BookingFlowProvider, useBookingFlow } from './features/booking/BookingFlowProvider';
 import GalleryHelpSheet from './features/booking/GalleryHelpSheet';
@@ -14,7 +10,21 @@ import { ARTISTS } from './data/artists';
 import { trackAnalytics } from './analytics/client';
 import { trackMetaPageView } from './analytics/metaPixel';
 
+/**
+ * Everything except the feed is split out of the entry chunk.
+ *
+ * `/` renders the feed, so the conventional site, the artist pages and the
+ * legal pages are not needed to reach first interaction. They load when their
+ * route is actually visited.
+ */
+const Home = lazy(() => import('./pages/Home'));
+const Artists = lazy(() => import('./pages/Artists'));
+const ArtistDetail = lazy(() => import('./pages/ArtistDetail'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
 const Insights = lazy(() => import('./pages/Insights'));
+
+/** A calm brand-dark field while a route chunk arrives. Never a spinner. */
+const RouteFallback = () => <div className="min-h-screen bg-[#0e0e0e]" />;
 
 type Page = 'home' | 'artists' | 'artist-detail' | 'booking';
 
@@ -140,6 +150,9 @@ function AppRoutes() {
     <div className={isFeed ? 'bg-[#080808]' : 'bg-[#111111] min-h-screen'}>
       {showSiteChrome && <Nav onNavigate={go} currentPage={page} />}
 
+      {/* One boundary for every split route. The feed itself is not split, so
+          landing on "/" never waits on a chunk. */}
+      <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/" element={<VideoFeedPage onOpenInsights={() => navigate('/bank-insights')} />} />
         {/* The long-form studio site. Every section it already had — artists,
@@ -151,9 +164,10 @@ function AppRoutes() {
           <Route path="/accessibility" element={<LegalPage type="accessibility" />} />
           <Route path="/privacy" element={<LegalPage type="privacy" />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
-          <Route path="/bank-insights" element={<Suspense fallback={<div className="min-h-screen bg-[#0e0e0e]" />}><Insights /></Suspense>} />
+          <Route path="/bank-insights" element={<Insights />} />
           <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
 
       {showSiteChrome && (
         <>

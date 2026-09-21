@@ -2,7 +2,7 @@ import type { FeedVideo } from '../types';
 import { VIDEO_ARTIST_MAP } from './videoArtistMap';
 import { DEFAULT_VIDEO_COPY, VIDEO_COPY_OVERRIDES } from './videoContent';
 import { ARTISTS } from '../../../data/artists';
-import { assetsIn, videoUrl, viewportVideoTier } from '../../../media/delivery';
+import { assetsIn, videoPosterUrl, videoUrl, viewportVideoTier } from '../../../media/delivery';
 
 /**
  * The feed's clips, taken from the generated media manifest.
@@ -65,6 +65,7 @@ export const FEED_VIDEOS: FeedVideo[] = VIDEO_ASSETS.map((asset, index) => {
     id,
     src: remote ?? local ?? '',
     localSrc: local,
+    poster: videoPosterUrl(asset, DELIVERY_TIER),
     fileName,
     // An unrecognised artist id is dropped rather than rendered, so a typo in
     // the mapping can never surface as a broken or invented attribution.

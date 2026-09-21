@@ -1,7 +1,17 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { trackAnalytics } from '../../analytics/client';
-import BookingFlowSheet, { type BookingFlowOptions } from './BookingFlowSheet';
-import CommentsSheet from '../video-feed/CommentsSheet';
+import { lazy, Suspense } from 'react';
+import type { BookingFlowOptions } from './BookingFlowSheet';
+
+/**
+ * The booking journey and the comment composer are the two largest
+ * interactive surfaces in the app, and neither is needed until the visitor
+ * asks for it. Splitting them keeps the feed's first interaction light; the
+ * trigger buttons stay in the entry chunk, so nothing is delayed until the
+ * moment one is actually opened.
+ */
+const BookingFlowSheet = lazy(() => import('./BookingFlowSheet'));
+const CommentsSheet = lazy(() => import('../video-feed/CommentsSheet'));
 
 interface EnquiryOptions {
   /** Content the enquiry relates to — a clip id, or `artist-<id>`. */
@@ -72,6 +82,9 @@ export function BookingFlowProvider({ children }: { children: ReactNode }) {
       {children}
       {(booking || enquiry) && (
         <div className="feed-root fixed inset-0 z-[300]">
+          {/* The sheet animates in from the bottom, so an empty frame for the
+              instant a chunk takes to arrive reads as the sheet opening. */}
+          <Suspense fallback={null}>
           {booking && <BookingFlowSheet {...booking} onClose={close} />}
           {enquiry && (
             <CommentsSheet
@@ -82,6 +95,7 @@ export function BookingFlowProvider({ children }: { children: ReactNode }) {
               onSubmitted={() => trackAnalytics('comment_submit', { entityType: 'enquiry', entityId: enquiry.contentId })}
             />
           )}
+          </Suspense>
         </div>
       )}
     </BookingFlowContext.Provider>

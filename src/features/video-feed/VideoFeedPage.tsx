@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ARTISTS } from '../../data/artists';
 import { trackAnalytics } from '../../analytics/client';
 import { useBookingFlow } from '../booking/BookingFlowProvider';
 import { FEED_VIDEOS } from './data/videoManifest';
-import { CAROUSEL_CARDS } from './data/carouselAssets';
+import { CAROUSEL_CARDS, preloadCarouselBatch } from './data/carouselAssets';
+import { useVideoPrebuffer } from './hooks/useVideoPrebuffer';
 import type { CarouselEvent } from './PortfolioInterlude';
 import { fetchComments, fetchReactions, setReaction as persistReaction } from './data/feedApi';
 import { useShuffleFeed } from './hooks/useShuffleFeed';
@@ -20,8 +21,8 @@ import FeedBottomBar from './FeedBottomBar';
 import ArtistDiscovery from './ArtistDiscovery';
 import FeedSidebar from './FeedSidebar';
 import PortfolioInterlude from './PortfolioInterlude';
-import PortfolioViewer from './PortfolioViewer';
-import CommentsSheet from './CommentsSheet';
+const PortfolioViewer = lazy(() => import('./PortfolioViewer'));
+const CommentsSheet = lazy(() => import('./CommentsSheet'));
 import SwipeGuide from './SwipeGuide';
 import { SoundOffIcon } from './ui/icons';
 import type { FeedAttribution, ReactionKind, ReactionState } from './types';
@@ -150,6 +151,50 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
       metadata: { reason: sound.state.hasUserActivatedAudio ? 'playback_blocked' : 'first_visit' },
     });
   }, [sound.promptVisible, sound.state.hasUserActivatedAudio, currentVideo]);
+
+  /**
+   * Whether the clip on screen has actually started.
+   *
+   * Warming is held back until it has, so preparing what comes next can never
+   * compete for bandwidth with the video the visitor is watching right now.
+   */
+  const [currentStarted, setCurrentStarted] = useState(false);
+  useEffect(() => { setCurrentStarted(false); }, [currentVideo?.id]);
+
+  // Clips after `next`, which is already mounted with preload="auto".
+  const upcomingUrls = useMemo(
+    () => feed.upcomingVideos.map(video => video.src).filter(Boolean),
+    [feed.upcomingVideos],
+  );
+
+  const prebuffer = useVideoPrebuffer(upcomingUrls, {
+    // One ahead while the current clip is still starting, more once it is
+    // playing. Bounded further by the connection's own budget.
+    depth: currentStarted ? 4 : 1,
+    // An open overlay means the visitor is reading, not swiping; nothing is
+    // gained by holding downloads open behind it.
+    enabled: !overlayOpen,
+  });
+
+  /**
+   * Warms the next carousel batch a couple of clips before it is reached, so
+   * the interlude opens on images rather than empty frames.
+   */
+  useEffect(() => {
+    const { entries, position } = feed;
+    for (let i = position + 1; i < Math.min(entries.length, position + 3); i += 1) {
+      const entry = entries[i];
+      if (entry.kind === 'interlude') { preloadCarouselBatch(entry.interludeIndex); return; }
+    }
+  }, [feed.entries, feed.position]);
+
+  if (import.meta.env.DEV) {
+    // Diagnostics only, and only when something is actually warming.
+    (window as Window & { __feedPrebuffer?: unknown }).__feedPrebuffer = () => ({
+      budget: prebuffer.budget,
+      warming: prebuffer.describe(),
+    });
+  }
 
   const markSwiped = useCallback(() => setHasSwiped(true), []);
 
@@ -372,7 +417,10 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
             registerElement={sound.registerElement}
             onAudioBlocked={sound.reportBlocked}
             onAudiblePlayback={sound.reportAudiblePlayback}
-            onStarted={video => trackAnalytics('video_started', { entityType: 'content', entityId: video.id, metadata: { video_id: video.id } })}
+            onStarted={video => {
+              setCurrentStarted(true);
+              trackAnalytics('video_started', { entityType: 'content', entityId: video.id, metadata: { video_id: video.id } });
+            }}
             onEnded={video => handleEnded(video.id)}
             onMilestone={(video, milestone) => trackAnalytics(milestone, {
               entityType: 'content', entityId: video.id, metadata: { video_id: video.id, milestone },
@@ -496,6 +544,9 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
         />
       )}
 
+      {/* Both overlays arrive as their own chunk; an empty frame while one
+          loads reads as the sheet opening, so no spinner is warranted. */}
+      <Suspense fallback={null}>
       {commentsOpen && (
         <CommentsSheet
           contentId={currentVideo.id}
@@ -522,6 +573,7 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
           onBook={() => startBooking('portfolio_viewer')}
         />
       )}
+      </Suspense>
     </div>
   );
 }

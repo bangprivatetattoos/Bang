@@ -222,10 +222,17 @@ export default function VideoFeedItem({
       {/* Poster state: a graceful brand-dark field rather than a blank frame
           or a spinner while the clip buffers. */}
       <div
-        className="absolute inset-0 transition-opacity duration-500"
+        className="absolute inset-0 transition-opacity duration-500 bg-center bg-cover"
         style={{
           opacity: ready ? 0 : 1,
-          background: 'radial-gradient(120% 90% at 50% 25%, #161616 0%, #0c0c0c 55%, #080808 100%)',
+          // The clip's own first frame when one is available, over the same
+          // brand-dark field as before so an absent poster degrades to the
+          // previous behaviour rather than to white.
+          backgroundColor: '#0c0c0c',
+          backgroundImage: video.poster ? `url("${video.poster}")` : undefined,
+          background: video.poster
+            ? undefined
+            : 'radial-gradient(120% 90% at 50% 25%, #161616 0%, #0c0c0c 55%, #080808 100%)',
         }}
       />
       <video

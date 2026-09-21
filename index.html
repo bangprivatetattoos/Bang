@@ -4,6 +4,13 @@
     <!-- figma:head-start -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Every clip, poster and portfolio image is served from here. Opening
+         the connection during HTML parse saves the first video a DNS lookup,
+         a TCP handshake and a TLS negotiation it would otherwise pay for
+         after the bundle had parsed. One origin only: a wall of preconnects
+         costs more than it saves. -->
+    <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
+    <link rel="dns-prefetch" href="https://res.cloudinary.com" />
     <title><!-- figma:title --></title>
     <!-- figma:head-end -->
   </head>
