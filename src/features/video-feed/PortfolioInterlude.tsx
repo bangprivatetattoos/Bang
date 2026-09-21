@@ -49,7 +49,7 @@ export default function PortfolioInterlude({
    * One bad asset must not take the interlude down with it, and a broken
    * image icon in a portfolio strip reads worse than a quiet placeholder.
    */
-  const [failed, setFailed] = useState<Set<string>>(() => new Set());
+  const [failedCards, setFailedCards] = useState<Set<string>>(() => new Set());
   const [active, setActive] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
   const pausedUntil = useRef(0);
@@ -59,11 +59,44 @@ export default function PortfolioInterlude({
   const events = useRef(onEvent);
   events.current = onEvent;
 
+  /**
+   * Held in refs because the parent passes inline arrows.
+   *
+   * Their identity changes on every render of the feed page, and an interval
+   * that lists them as dependencies is rebuilt just as often — which, when the
+   * parent renders faster than the hold time, means it never fires and the
+   * strip sits frozen on its first image.
+   */
+  const forward = useRef(onForward);
+  forward.current = onForward;
+  const backward = useRef(onBackward);
+  backward.current = onBackward;
+
   const total = batch.cards.length;
 
   useEffect(() => {
     events.current?.('carousel_shown', { carousel_batch_id: batch.id });
-  }, [batch.id]);
+    if (import.meta.env.DEV) {
+      console.info(
+        `[carousel] mounted — batch ${batch.id} (index ${batch.index}), ${batch.cards.length} cards, first: ${batch.cards[0]?.url ?? '(none)'}`,
+      );
+    }
+  }, [batch.id, batch.index, batch.cards]);
+
+  /**
+   * An interlude with no usable card is not something to show.
+   *
+   * Rather than stranding the visitor on an empty screen, the feed is handed
+   * on. Deferred by a frame so this never runs during the mount that created
+   * it.
+   */
+  const usable = total > 0 && failedCards.size < total;
+  useEffect(() => {
+    if (usable) return;
+    if (import.meta.env.DEV) console.warn(`[carousel] batch ${batch.id} has no usable image; skipping the interlude.`);
+    const raf = window.requestAnimationFrame(() => forward.current());
+    return () => window.cancelAnimationFrame(raf);
+  }, [usable, batch.id]);
 
   /** One impression per image per interlude, never repeated. */
   useEffect(() => {
@@ -72,6 +105,21 @@ export default function PortfolioInterlude({
     const card = batch.cards[active];
     events.current?.('carousel_image_impression', { carousel_batch_id: batch.id, ...(card ? { content_id: card.id } : {}) });
   }, [active, batch, total]);
+
+  /**
+   * A card whose image will not load must not hold the strip.
+   *
+   * The visitor gets the next usable piece instead of watching a dark frame
+   * for the full hold time.
+   */
+  useEffect(() => {
+    const card = batch.cards[active];
+    if (!card || !failedCards.has(card.id) || failedCards.size >= total) return;
+    const timer = window.setTimeout(() => {
+      setActive(current => (current >= total - 1 ? current : current + 1));
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [active, failedCards, batch.cards, total]);
 
   /** Keeps the active card centred, whether it was reached by hand or timer. */
   useEffect(() => {
@@ -105,22 +153,30 @@ export default function PortfolioInterlude({
     if (total === 0) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
+    // One interval for the life of the interlude. It reads `active` through
+    // the state updater rather than closing over it, so nothing here needs to
+    // be rebuilt when the strip moves.
     const timer = window.setInterval(() => {
       if (performance.now() < pausedUntil.current) return;
 
-      if (active >= total - 1) {
-        if (completed.current) return;
-        completed.current = true;
-        events.current?.('carousel_completed', { carousel_batch_id: batch.id });
-        onForward();
-        return;
-      }
-      events.current?.('carousel_auto_advance', { carousel_batch_id: batch.id });
-      setActive(current => Math.min(total - 1, current + 1));
+      setActive(current => {
+        if (current >= total - 1) {
+          if (!completed.current) {
+            completed.current = true;
+            events.current?.('carousel_completed', { carousel_batch_id: batch.id });
+            // Deferred so the feed advances after this state update settles
+            // rather than during it.
+            window.setTimeout(() => forward.current(), 0);
+          }
+          return current;
+        }
+        events.current?.('carousel_auto_advance', { carousel_batch_id: batch.id });
+        return current + 1;
+      });
     }, HOLD_MS);
 
     return () => window.clearInterval(timer);
-  }, [active, total, batch.id, onForward]);
+  }, [total, batch.id]);
 
   /**
    * Gesture handling on the strip.
@@ -164,8 +220,8 @@ export default function PortfolioInterlude({
       return;
     }
     if (start.axis === 'y' && Math.abs(dy) >= SWIPE_THRESHOLD) {
-      if (dy > 0) onForward();
-      else onBackward();
+      if (dy > 0) forward.current();
+      else backward.current();
     }
   };
 
@@ -232,7 +288,7 @@ export default function PortfolioInterlude({
               marginRight: index === batch.cards.length - 1 ? 'max(20px, calc(50vw - 116px))' : undefined,
             }}
           >
-            {failed.has(card.id) ? (
+            {failedCards.has(card.id) ? (
               // A brand-dark field rather than a broken-image icon.
               <span
                 aria-hidden="true"
@@ -249,7 +305,7 @@ export default function PortfolioInterlude({
                 decoding="async"
                 onError={() => {
                   console.warn(`[carousel] image failed to load: ${card.id}`);
-                  setFailed(current => (current.has(card.id) ? current : new Set(current).add(card.id)));
+                  setFailedCards(current => (current.has(card.id) ? current : new Set(current).add(card.id)));
                 }}
                 className="w-full h-full object-cover"
               />

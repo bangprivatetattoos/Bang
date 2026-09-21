@@ -1,5 +1,5 @@
 import { ARTISTS, WORK_IMAGES } from '../../../data/artists';
-import { resolveMedia } from '../../../media/delivery';
+import { assetsIn, imageUrl } from '../../../media/delivery';
 import { batchIndexFor, computeBatchRanges, CAROUSEL_BATCH_SIZE } from './carouselBatching';
 
 export interface CarouselCard {
@@ -22,23 +22,31 @@ export interface CarouselCard {
  * the real portfolio images already published on the site, so it never ships
  * stock photography.
  */
-const dedicatedAssets: Record<string, string> = {
-  ...import.meta.glob<string>('../../../../caro images/*.{jpg,jpeg,jfif,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-  ...import.meta.glob<string>('../../../../sitecarousel/*.{jpg,jpeg,jfif,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-  ...import.meta.glob<string>('../../../../carousel/*.{jpg,jpeg,jfif,png,webp,avif,JPG,JPEG,PNG,WEBP}', {
-    eager: true,
-    query: '?url',
-    import: 'default',
-  }),
-};
+/**
+ * The originals on disk, for development only.
+ *
+ * Guarded by `import.meta.env.DEV`, which the production build replaces with
+ * `false`. The glob object then has no reader, so Rollup drops it and Vite
+ * emits none of the originals — the ~13 MB of carousel images that used to
+ * ship in every deploy for files the browser fetched from Cloudinary anyway.
+ *
+ * The glob patterns themselves stay in the source because `scripts/media`
+ * reads them to discover which folders to sync.
+ */
+/**
+ * Carousel artwork is served from Cloudinary and described by the generated
+ * manifest, which is committed, so both development and production read the
+ * same source of truth.
+ *
+ * The originals are deliberately NOT globbed any more: an eager
+ * `import.meta.glob` made Vite emit all 35 of them into every build -- about
+ * 13 MB of files the browser never requested, because Cloudinary serves them.
+ * Vite processes those imports while transforming, so guarding the glob behind
+ * `import.meta.env.DEV` does not stop the emission; the glob has to be gone.
+ *
+ * `scripts/media/config.mjs` records which folders to sync.
+ */
+
 
 /**
  * Per-image style labels, keyed by filename.
@@ -75,48 +83,36 @@ export const CAROUSEL_EXCLUDE: string[] = [];
 
 const excluded = new Set(CAROUSEL_EXCLUDE);
 
-const fileNameOf = (path: string) => path.split('/').pop() ?? path;
-
-/** The numeric prefix the files are named with (`0-`, `1-`, … `34-`). */
-const orderOf = (fileName: string) => {
-  const leading = /^(\d+)-/.exec(fileName);
-  return leading ? Number.parseInt(leading[1], 10) : Number.MAX_SAFE_INTEGER;
-};
-
-/** Filename with the ordering prefix removed, which identifies the artwork. */
-const artworkKey = (fileName: string) => fileName.replace(/^\d+-/, '').toLowerCase();
-
 const readableName = (fileName: string) =>
   fileName.replace(/^\d+-/, '').replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
 
-const sorted = Object.entries(dedicatedAssets).sort(([a], [b]) => {
-  const byNumber = orderOf(fileNameOf(a)) - orderOf(fileNameOf(b));
-  return byNumber !== 0 ? byNumber : a.localeCompare(b, undefined, { numeric: true });
-});
-
-// The supplied set contains a few artworks saved twice under different
-// ordering prefixes. Showing the same tattoo twice in one strip looks like a
-// bug, so the first occurrence wins and the rest are skipped. Nothing on disk
-// is touched.
-const seen = new Set<string>();
+/**
+ * Artworks the sync skipped as repeats.
+ *
+ * The supplied set stores a few pieces twice under different ordering
+ * prefixes. Deduplication now happens once, in the media sync, so the
+ * manifest already holds one entry per artwork. Kept as a published surface
+ * for anything that reported on it.
+ */
 export const DUPLICATE_CAROUSEL_FILES: string[] = [];
 
+/**
+ * The manifest is the source of truth, in development and production alike.
+ *
+ * It carries the sequence the sync computed -- deduplicated, in
+ * `carouselOrder`, under the same filename ids the labels and analytics use
+ * -- so there is nothing left to re-derive from files the build no longer
+ * ships.
+ */
 const DEDICATED_CARDS: CarouselCard[] = [];
-for (const [path, url] of sorted) {
-  const fileName = fileNameOf(path);
+for (const asset of assetsIn('carousel')) {
+  const fileName = asset.id;
   if (excluded.has(fileName)) continue;
-  const key = artworkKey(fileName);
-  if (seen.has(key)) {
-    DUPLICATE_CAROUSEL_FILES.push(fileName);
-    continue;
-  }
-  seen.add(key);
+  const url = imageUrl(asset, 'carousel');
+  if (!url) continue;
   DEDICATED_CARDS.push({
     id: fileName,
-    // Cloudinary once the artwork has been migrated, the bundled original
-    // until then. The id stays the filename either way, so the batch order,
-    // the analytics ids and the label overrides are all unaffected.
-    url: resolveMedia(fileName, url, 'carousel') ?? url,
+    url,
     category: CAROUSEL_LABELS[fileName] ?? null,
     alt: `BANG Private Tattoos portfolio — ${readableName(fileName)}`,
   });
