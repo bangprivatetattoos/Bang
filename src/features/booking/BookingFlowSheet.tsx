@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ARTISTS, type Artist } from '../../data/artists';
 import { whatsappUrl } from '../../data/siteContact';
 import { trackAnalytics } from '../../analytics/client';
@@ -16,6 +16,7 @@ import {
 import { recordBookingIntent } from '../video-feed/data/feedApi';
 import LocationAutocomplete from './LocationAutocomplete';
 import type { UsState } from './usStates';
+import FormHint from './FormHint';
 
 export interface BookingFlowOptions {
   /**
@@ -50,6 +51,9 @@ interface BookingSelection {
   tattooTypeId: TattooTypeIconId | null;
   priceRangeId: string | null;
 }
+
+const REDUCED_MOTION = () =>
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const EMPTY: BookingSelection = {
   locationId: null, usState: null, city: '', artistId: null, tattooTypeId: null, priceRangeId: null,
@@ -291,8 +295,60 @@ export default function BookingFlowSheet({
   const submissionId = useRef(newSubmissionId());
   const recorded = useRef(false);
 
+  /** The sheet's one internal scroll container. The document never scrolls. */
+  const scrollRef = useRef<HTMLDivElement>(null);
+  /** The price range block, revealed once a tattoo type has been chosen. */
+  const priceRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Every step starts at its own beginning.
+   *
+   * The sheet is opened by a tap near the bottom of the screen, and without
+   * this the content kept whatever offset the previous step left behind — so
+   * the visitor arrived partway down and had to scroll UP to find the title
+   * and the instruction. Reset in a layout effect, before paint, so the step
+   * is never briefly visible at the wrong offset, and on a frame after it so
+   * the reset survives the content settling.
+   *
+   * Only this element moves; the document is never scrolled.
+   */
+  useLayoutEffect(() => {
+    const element = scrollRef.current;
+    if (!element) return;
+    element.scrollTop = 0;
+    const frame = window.requestAnimationFrame(() => { element.scrollTop = 0; });
+    return () => window.cancelAnimationFrame(frame);
+  }, [step]);
+
   const set = <K extends keyof BookingSelection>(key: K, value: BookingSelection[K]) =>
     setSelection(current => ({ ...current, [key]: value }));
+
+  /**
+   * Choosing a tattoo type brings the price range into view.
+   *
+   * Continue stays disabled until both halves of step three are answered, and
+   * on a small screen the price range sits below the fold — so the visitor
+   * could reasonably believe they had finished. The pause is deliberate: the
+   * card's selected state should register before the view moves.
+   *
+   * Nothing is chosen for them and the step does not advance.
+   */
+  const [revealPrice, setRevealPrice] = useState(false);
+  useEffect(() => {
+    if (step !== 3 || !selection.tattooTypeId || selection.priceRangeId) return;
+    const delay = REDUCED_MOTION() ? 0 : 220;
+    const timer = window.setTimeout(() => {
+      setRevealPrice(true);
+      const container = scrollRef.current;
+      const target = priceRef.current;
+      if (!container || !target) return;
+      // Scrolls the sheet's own container, never the window, and never via
+      // scrollIntoView, which would walk up and move the document too.
+      const top = target.offsetTop - container.offsetTop - 12;
+      container.scrollTo({ top: Math.max(0, top), behavior: REDUCED_MOTION() ? 'auto' : 'smooth' });
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [step, selection.tattooTypeId, selection.priceRangeId]);
 
   const location = LOCATIONS.find(item => item.id === selection.locationId) ?? null;
   const artist = ARTISTS.find(item => item.id === selection.artistId) ?? null;
@@ -426,11 +482,14 @@ export default function BookingFlowSheet({
         </p>
       </div>
 
-      <div className="feed-scroll flex-1 overflow-y-auto px-5 md:px-7 pb-2">
+      <div ref={scrollRef} className="feed-scroll flex-1 overflow-y-auto px-5 md:px-7 pb-2">
         {/* ── Step 1 — Location ───────────────────────────────────────── */}
         {step === 1 && (
           <>
             <StepHeading title={<>Select your<br />location</>} copy="Choose your location so we can continue with your booking request." />
+            <FormHint tone={location ? 'ready' : 'pending'}>
+              {location ? 'You\u2019re ready to continue.' : 'Select your location to continue.'}
+            </FormHint>
 
             <div className="space-y-2.5 md:grid md:grid-cols-2 md:gap-2.5 md:space-y-0 lg:grid-cols-3">
               {LOCATIONS.map(option => {
@@ -544,6 +603,9 @@ export default function BookingFlowSheet({
               Tattoo type &<br />price range
             </h2>
             <p className="text-[#858585] text-[13px] mb-5">Choose the closest match for your tattoo request.</p>
+            <FormHint tone={tattooType ? 'ready' : 'pending'}>
+              {tattooType ? null : 'Choose the option closest to the tattoo you\u2019re planning.'}
+            </FormHint>
 
             <p className="text-[#626262] text-[9px] uppercase tracking-[0.26em] mb-2.5">Tattoo type</p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-6">
@@ -573,7 +635,15 @@ export default function BookingFlowSheet({
               })}
             </div>
 
+            <div ref={priceRef}>
             <p className="text-[#626262] text-[9px] uppercase tracking-[0.26em] mb-2.5">Price range</p>
+            <FormHint tone={priceRange ? 'ready' : 'pending'}>
+              {priceRange
+                ? 'You\u2019re ready to continue to the consultation review.'
+                : tattooType
+                  ? 'Next, select the price range that best matches your tattoo request.'
+                  : null}
+            </FormHint>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
               {PRICE_RANGES.map(range => {
                 const selected = selection.priceRangeId === range.id;
@@ -599,6 +669,7 @@ export default function BookingFlowSheet({
               })}
             </div>
             <p className="text-[#575757] text-[10px] mt-3 leading-relaxed">{PRICING_DISCLAIMER}</p>
+            </div>
           </>
         )}
 
