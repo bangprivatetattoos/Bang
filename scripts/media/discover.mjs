@@ -200,6 +200,10 @@ async function describe({ relativePath, category, cloudinaryFolder, extra = {} }
     resourceType,
     bytes: stats.size,
     publicId: resourceType ? toPublicId(cloudinaryFolder, fileName) : null,
+    // The Media Library folder this product environment files the asset
+    // under. Display placement only — the public id, and therefore every
+    // delivery URL, is unaffected by it.
+    assetFolder: cloudinaryFolder,
     noteworthy: NOTEWORTHY_EXTENSIONS.has(extension),
     ...extra,
   };
@@ -264,13 +268,7 @@ export async function discoverMedia({ withHashes = true } = {}) {
         category: source.category,
         cloudinaryFolder: source.cloudinaryFolder,
         extra: source.category === 'videos'
-          // `assetFolder` is the Media Library folder this product
-          // environment files the asset under. It is display placement only:
-          // the public id, and therefore every delivery URL, is unaffected.
-          // Carried for videos alone, because that is the category being
-          // migrated — the already-uploaded categories are left exactly where
-          // they are rather than being reorganised as a side effect.
-          ? { contentId: feedContentId(fileName), assetFolder: source.cloudinaryFolder }
+          ? { contentId: feedContentId(fileName) }
           // Carousel order is explicit and derived from natural sort, so the
           // generated manifest carries it rather than leaving the frontend to
           // re-sort strings. `carouselOrder` is the 1-based sequence the

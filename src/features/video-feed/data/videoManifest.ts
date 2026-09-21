@@ -2,6 +2,16 @@ import type { FeedVideo } from '../types';
 import { VIDEO_ARTIST_MAP } from './videoArtistMap';
 import { DEFAULT_VIDEO_COPY, VIDEO_COPY_OVERRIDES } from './videoContent';
 import { ARTISTS } from '../../../data/artists';
+import { assetById, videoUrl, viewportVideoTier } from '../../../media/delivery';
+
+/**
+ * Decided once, at module load.
+ *
+ * Re-deciding per render would swap a playing clip's source mid-feed, which is
+ * far more disruptive than serving one encode tier to a visitor who rotated
+ * their phone.
+ */
+const DELIVERY_TIER = viewportVideoTier();
 
 /**
  * The real tattoo clips live in `/sitevideos` at the repository root, which is
@@ -65,9 +75,15 @@ export const FEED_VIDEOS: FeedVideo[] = entries
     const base = DEFAULT_VIDEO_COPY[index % DEFAULT_VIDEO_COPY.length];
     const override = VIDEO_COPY_OVERRIDES[id] ?? {};
 
+    // Cloudinary is the delivery source once the clip has been migrated. The
+    // content id is unchanged either way, so comments, reactions, analytics
+    // and feed history stay attached to exactly the same media.
+    const remote = videoUrl(assetById(id), DELIVERY_TIER);
+
     return {
       id,
-      src,
+      src: remote ?? src,
+      localSrc: src,
       fileName,
       // An unrecognised artist id is dropped rather than rendered, so a typo in
       // the mapping can never surface as a broken or invented attribution.
@@ -83,6 +99,13 @@ if (import.meta.env.DEV) {
     console.warn(
       `[video-feed] ${UNSUPPORTED_VIDEO_FILES.length} file(s) in /sitevideos use a container that is not reliably playable in browsers and were excluded:`,
       UNSUPPORTED_VIDEO_FILES,
+    );
+  }
+  const local = FEED_VIDEOS.filter(video => video.src === video.localSrc);
+  if (local.length) {
+    console.info(
+      `[video-feed] ${local.length}/${FEED_VIDEOS.length} clips are still served from the bundle rather than Cloudinary.`,
+      local.map(video => video.id),
     );
   }
   const unmapped = FEED_VIDEOS.filter(video => video.artistId === null);

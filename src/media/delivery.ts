@@ -28,6 +28,14 @@ export interface MediaAsset {
   order?: number;
   /** One-based carousel sequence. Authoritative for batch composition. */
   carouselOrder?: number;
+  /**
+   * Which mobile strategy measured smaller for this clip.
+   *
+   * Absent until the source-aware audit has run, and treated as 'eco' when
+   * absent. 'source' means the transformed derivative came back larger than
+   * the original, so the original is the smaller thing to serve.
+   */
+  mobileProfile?: 'eco' | 'source';
   /** Repository-relative original, used as the development fallback. */
   source: string;
 }
@@ -104,9 +112,35 @@ export type ImageTreatment = keyof typeof IMAGE_TRANSFORMS;
  */
 const VIDEO_WIDTHS = { mobile: 720, tablet: 1080, desktop: 1280 } as const;
 
+/**
+ * Quality per tier.
+ *
+ * `eco` on mobile, where the saving is worth most and the screen is smallest.
+ * `good` on tablet and desktop, because tattoo linework is the subject: this
+ * is not footage where detail can be traded away cheaply. Deliberately never
+ * `q_auto:low` for full-screen feed playback.
+ */
+const VIDEO_QUALITY = { mobile: 'q_auto:eco', tablet: 'q_auto:good', desktop: 'q_auto:good' } as const;
+
 export type VideoTier = keyof typeof VIDEO_WIDTHS;
 
-const videoTransform = (tier: VideoTier) => `f_auto,q_auto,vc_auto,c_limit,w_${VIDEO_WIDTHS[tier]}`;
+const videoTransform = (tier: VideoTier) =>
+  `f_auto,${VIDEO_QUALITY[tier]},vc_auto,c_limit,w_${VIDEO_WIDTHS[tier]}`;
+
+/**
+ * The tier this viewport needs, read once at module load.
+ *
+ * Re-deciding on every resize would swap a playing clip's source mid-feed,
+ * which is far more disruptive than serving a slightly larger encode to
+ * someone who rotated their phone.
+ */
+export function viewportVideoTier(): VideoTier {
+  if (typeof window === 'undefined') return 'mobile';
+  const width = window.innerWidth;
+  if (width >= 1280) return 'desktop';
+  if (width >= 768) return 'tablet';
+  return 'mobile';
+}
 
 /**
  * The poster frame for a tier: the still at zero seconds.
@@ -120,7 +154,10 @@ const posterTransform = (tier: VideoTier) => `f_auto,q_auto,c_limit,w_${VIDEO_WI
 function deliver(resourceType: 'image' | 'video', publicId: string, transform: string, extension?: string) {
   if (!BASE) return null;
   const suffix = extension ? `.${extension}` : '';
-  return `${BASE}/${resourceType}/upload/${transform}/${publicId}${suffix}`;
+  // An empty transform delivers the stored original, with no extra path
+  // segment that Cloudinary would read as a malformed transformation.
+  const path = transform ? `${transform}/` : '';
+  return `${BASE}/${resourceType}/upload/${path}${publicId}${suffix}`;
 }
 
 /**
@@ -135,9 +172,19 @@ export function imageUrl(asset: MediaAsset | undefined, treatment: ImageTreatmen
   return deliver('image', asset.publicId, IMAGE_TRANSFORMS[treatment]);
 }
 
-/** Delivery URL for a clip. The feed is portrait-first, so `mobile` is the default. */
+/**
+ * Delivery URL for a clip. The feed is portrait-first, so `mobile` is default.
+ *
+ * A clip whose audit found the original smaller than the transform is served
+ * untransformed: running it through Cloudinary anyway would cost the visitor
+ * bandwidth to receive a file that is no better. Transforming is a means, not
+ * the goal.
+ */
 export function videoUrl(asset: MediaAsset | undefined, tier: VideoTier = 'mobile'): string | null {
   if (!asset || asset.resourceType !== 'video') return null;
+  if (tier === 'mobile' && asset.mobileProfile === 'source') {
+    return deliver('video', asset.publicId, '');
+  }
   return deliver('video', asset.publicId, videoTransform(tier));
 }
 

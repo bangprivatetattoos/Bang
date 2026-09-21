@@ -4,8 +4,18 @@ import type { Artist } from '../../data/artists';
 export interface FeedVideo {
   /** Stable content id. Derived from the source filename, so it survives reordering. */
   id: string;
-  /** Resolved, hashed asset URL produced by the Vite asset pipeline. */
+  /**
+   * Where the clip is actually fetched from: the Cloudinary delivery URL once
+   * the asset has been migrated, otherwise the bundled original.
+   */
   src: string;
+  /**
+   * The bundled original, always present.
+   *
+   * Kept so a Cloudinary failure has somewhere to fall back to during the
+   * migration rather than leaving a black frame in the feed.
+   */
+  localSrc: string;
   /** Original filename, kept so mappings can be authored against what is on disk. */
   fileName: string;
   /**

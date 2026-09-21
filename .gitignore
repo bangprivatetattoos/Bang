@@ -33,3 +33,15 @@ Follow Prompt Instructions.zip
 # Cloudinary media sync keeps its state and generated manifest in the repo
 # on purpose (they stop two machines uploading the same file twice), so
 # nothing is ignored here. Credentials live in .env.local, already ignored.
+
+# Local original media. Every asset here is migrated to Cloudinary and served
+# from there; the originals stay on disk as the rollback source. They are far
+# too large for git — sitevideos/ alone is ~129 MB — so they are deliberately
+# local-only. The generated manifest (src/media/manifest.json) and the upload
+# mapping (media/sync-state.json) ARE tracked: the application and the sync
+# both depend on them.
+/sitevideos/
+/caro images/
+
+# Exact Figma design archive; a backup, not active project source.
+Follow Design Instructions.zip

@@ -72,6 +72,10 @@ function buildFrontendManifest({ assets, state, cloudName }) {
         ...(asset.artistId ? { artistId: asset.artistId } : {}),
         ...(asset.order != null ? { order: asset.order } : {}),
         ...(asset.carouselOrder != null ? { carouselOrder: asset.carouselOrder } : {}),
+        // Which mobile delivery strategy measured smaller for this clip.
+        // Absent until the delivery audit has run; the application treats a
+        // missing profile as 'eco', its ordinary default.
+        ...(record.mobileProfile ? { mobileProfile: record.mobileProfile } : {}),
         // Kept so the application can fall back to the local file for any
         // asset that has not been migrated yet.
         source: asset.relativePath,
@@ -257,6 +261,8 @@ async function main() {
   const nextState = { ...state };
   /** Reported again at the end, so a failure in a long run is not scrolled away. */
   const failures = [];
+  /** Assets that actually need a network call, gathered before any is made. */
+  const queued = [];
   for (const item of results) {
     const { asset, plan } = item;
 
@@ -266,6 +272,10 @@ async function main() {
       // Record the mapping so the existing remote asset is used rather than a
       // second copy being created on a later run.
       nextState[asset.relativePath] = {
+        // Anything other tooling recorded against this asset — the delivery
+        // audit's mobileProfile, for one — is kept. Rebuilding the record
+        // from the remote fields alone would silently discard it.
+        ...state[asset.relativePath],
         publicId: plan.remote.publicId,
         resourceType: plan.remote.resourceType,
         format: plan.remote.format,
@@ -280,17 +290,47 @@ async function main() {
       continue;
     }
 
-    try {
-      process.stdout.write(`  ${plan.action === 'replace' ? 'replace' : 'upload '} ${asset.relativePath} … `);
-      const uploaded = await uploadAsset(asset);
-      nextState[asset.relativePath] = { ...uploaded, sha256: asset.sha256 };
-      console.log('done');
-    } catch (error) {
-      item.plan = { action: 'failed', remote: null };
-      failures.push({ relativePath: asset.relativePath, reason: describeUploadError(error) });
-      // Message only. The full error object is never printed.
-      console.log(`FAILED (${describeUploadError(error)})`);
+    queued.push(item);
+  }
+
+  /**
+   * Uploads run a few at a time.
+   *
+   * Sequential was fine for 46 clips; it is not for 161 gallery images. The
+   * pool is deliberately small — enough to keep the connection busy, far short
+   * of a request storm against the account — and each worker still goes
+   * through `uploadAsset`, so the retry, the backoff and the deterministic
+   * public id are all unchanged. Incrementing the cursor is safe without a
+   * lock because nothing awaits between reading it and advancing it.
+   */
+  const CONCURRENCY = 6;
+  let cursor = 0;
+  let finished = 0;
+
+  const worker = async () => {
+    while (cursor < queued.length) {
+      const item = queued[cursor];
+      cursor += 1;
+      const { asset, plan } = item;
+      const label = plan.action === 'replace' ? 'replaced' : 'uploaded';
+      try {
+        const uploaded = await uploadAsset(asset);
+        nextState[asset.relativePath] = { ...uploaded, sha256: asset.sha256 };
+        finished += 1;
+        console.log(`  [${pad(finished, 3)}/${queued.length}] ${label}  ${asset.relativePath}`);
+      } catch (error) {
+        item.plan = { action: 'failed', remote: null };
+        failures.push({ relativePath: asset.relativePath, reason: describeUploadError(error) });
+        finished += 1;
+        // Message only. The full error object is never printed.
+        console.log(`  [${pad(finished, 3)}/${queued.length}] FAILED    ${asset.relativePath} (${describeUploadError(error)})`);
+      }
     }
+  };
+
+  if (queued.length) {
+    console.log(`\nUploading ${queued.length} asset${queued.length === 1 ? '' : 's'}, ${CONCURRENCY} at a time…`);
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queued.length) }, worker));
   }
 
   await writeJson(SYNC_STATE_PATH, nextState);

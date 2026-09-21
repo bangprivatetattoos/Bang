@@ -94,6 +94,15 @@ export default function VideoFeedItem({
    */
   const [refusedHere, setRefusedHere] = useState(false);
 
+  /**
+   * Cloudinary failed for this clip, so the bundled original is used instead.
+   *
+   * One switch per clip and no retry: if the fallback fails too, the poster
+   * field stays rather than the feed looping on a broken source.
+   */
+  const [useLocal, setUseLocal] = useState(false);
+  const source = useLocal ? video.localSrc : video.src;
+
   const active = role === 'current';
   const wantsSound = active && soundEnabled && !refusedHere;
 
@@ -126,6 +135,7 @@ export default function VideoFeedItem({
   }, [video.id]);
 
   useEffect(() => { setRefusedHere(false); }, [video.id, audioAttempt]);
+  useEffect(() => { setUseLocal(false); }, [video.id]);
 
   // Role changes without remounting, so the feed is told again which element
   // is the active one.
@@ -219,7 +229,13 @@ export default function VideoFeedItem({
       />
       <video
         ref={attachRef}
-        src={video.src}
+        src={source}
+        onError={() => {
+          // Only ever falls back, never forward, so this cannot loop.
+          if (useLocal || video.localSrc === video.src) return;
+          setUseLocal(true);
+          console.warn(`[video-feed] "${video.id}" failed to load from Cloudinary; serving the bundled original.`);
+        }}
         // `muted` is applied in the ref callback and the effect above, not
         // declared here: it follows the feed's sound setting, and React
         // reconciles the property and the attribute differently once the
