@@ -101,7 +101,8 @@ export default function VideoFeedItem({
    * field stays rather than the feed looping on a broken source.
    */
   const [useLocal, setUseLocal] = useState(false);
-  const source = useLocal ? video.localSrc : video.src;
+  const canFallBack = Boolean(video.localSrc) && video.localSrc !== video.src;
+  const source = useLocal && video.localSrc ? video.localSrc : video.src;
 
   const active = role === 'current';
   const wantsSound = active && soundEnabled && !refusedHere;
@@ -231,10 +232,12 @@ export default function VideoFeedItem({
         ref={attachRef}
         src={source}
         onError={() => {
-          // Only ever falls back, never forward, so this cannot loop.
-          if (useLocal || video.localSrc === video.src) return;
+          // Only ever falls back, never forward, so this cannot loop. In
+          // production there is no local copy, so the poster field stays
+          // rather than the element retrying a source that does not exist.
+          if (useLocal || !canFallBack) return;
           setUseLocal(true);
-          console.warn(`[video-feed] "${video.id}" failed to load from Cloudinary; serving the bundled original.`);
+          console.warn(`[video-feed] "${video.id}" failed to load from Cloudinary; using the local original.`);
         }}
         // `muted` is applied in the ref callback and the effect above, not
         // declared here: it follows the feed's sound setting, and React

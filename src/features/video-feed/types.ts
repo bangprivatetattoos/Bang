@@ -10,12 +10,12 @@ export interface FeedVideo {
    */
   src: string;
   /**
-   * The bundled original, always present.
+   * The original on disk, during development only.
    *
-   * Kept so a Cloudinary failure has somewhere to fall back to during the
-   * migration rather than leaving a black frame in the feed.
+   * Null in production: the originals are not shipped in the bundle, so there
+   * is nothing local to fall back to there. Cloudinary is the only source.
    */
-  localSrc: string;
+  localSrc: string | null;
   /** Original filename, kept so mappings can be authored against what is on disk. */
   fileName: string;
   /**

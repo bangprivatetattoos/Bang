@@ -1,4 +1,5 @@
 import { ARTISTS, WORK_IMAGES } from '../../../data/artists';
+import { resolveMedia } from '../../../media/delivery';
 import { batchIndexFor, computeBatchRanges, CAROUSEL_BATCH_SIZE } from './carouselBatching';
 
 export interface CarouselCard {
@@ -112,7 +113,10 @@ for (const [path, url] of sorted) {
   seen.add(key);
   DEDICATED_CARDS.push({
     id: fileName,
-    url,
+    // Cloudinary once the artwork has been migrated, the bundled original
+    // until then. The id stays the filename either way, so the batch order,
+    // the analytics ids and the label overrides are all unaffected.
+    url: resolveMedia(fileName, url, 'carousel') ?? url,
     category: CAROUSEL_LABELS[fileName] ?? null,
     alt: `BANG Private Tattoos portfolio — ${readableName(fileName)}`,
   });

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { assetById, videoUrl } from '../media/delivery';
 import { Link } from 'react-router-dom';
 import { ARTISTS, WORK_IMAGES } from '../data/artists';
 import { siteContact, whatsappUrl } from '../data/siteContact';
@@ -15,7 +16,17 @@ interface Props {
 }
 
 /* ── Hero ── */
-const HERO_VIDEO = new URL('../../hero video.mp4', import.meta.url).href;
+/**
+ * The hero clip, served from Cloudinary.
+ *
+ * Resolved through the manifest rather than imported, so the production
+ * bundle does not carry a 3.5 MB video the browser fetches from a CDN
+ * anyway. Falls back to the local file if the asset has not been migrated.
+ */
+const HERO_VIDEO = videoUrl(assetById('hero video.mp4'))
+  // Dev-only: a runtime path, not a module import, so the production build
+  // has no reason to copy a 3.5 MB original the CDN already serves.
+  ?? (import.meta.env.DEV ? '/hero%20video.mp4' : '');
 
 function Hero({ onNavigate }: Props) {
   const [loaded, setLoaded] = useState(false);

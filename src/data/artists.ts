@@ -1,3 +1,5 @@
+import { resolveMedia } from '../media/delivery';
+
 export interface GalleryImage {
   url: string;
   alt: string;
@@ -27,6 +29,14 @@ export interface Artist {
   availableThisWeek?: boolean;
 }
 
+/**
+ * Gallery and portrait imagery is served from Cloudinary once migrated, and
+ * from the bundled original until then. Identity is unchanged either way: a
+ * gallery image is keyed by its source filename and a portrait by its artist
+ * id, exactly as the generated manifest records them.
+ */
+const assetFileName = (path: string) => path.split('/').pop() ?? path;
+
 const POOL: GalleryImage[] = [
   { url: 'https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?w=800&h=1100&fit=crop&auto=format', alt: 'Tattoo application process', orientation: 'portrait' },
   { url: 'https://images.unsplash.com/photo-1597852075234-fd721ac361d3?w=1200&h=800&fit=crop&auto=format', alt: 'Detailed arm tattoo', orientation: 'landscape' },
@@ -51,7 +61,7 @@ const bangBangGalleryAssets = import.meta.glob<string>('../../Bang Bang/*.{jpg,j
 const BANG_BANG_GALLERY: GalleryImage[] = Object.entries(bangBangGalleryAssets)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Bang Bang tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: /BangBangForever|Screenshot|Odell|Thierry|IMG|original|roses/i.test(path) ? 'landscape' : 'portrait',
   }));
@@ -66,7 +76,7 @@ const SOLAR_GALLERY: GalleryImage[] = Object.entries(solarGalleryAssets)
   .filter(([path]) => !path.endsWith('/IMG_4930.webp'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Solar tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -81,7 +91,7 @@ const JAY_SHIN_GALLERY: GalleryImage[] = Object.entries(jayShinGalleryAssets)
   .filter(([path]) => !path.endsWith('/JAY232.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Jay Shin tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -96,7 +106,7 @@ const SARA_KORI_GALLERY: GalleryImage[] = Object.entries(saraKoriGalleryAssets)
   .filter(([path]) => !path.endsWith('/Sara_Kori_Website_photo.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Sara Kori tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -111,7 +121,7 @@ const VICTOR_GALLERY: GalleryImage[] = Object.entries(victorGalleryAssets)
   .filter(([path]) => !path.endsWith('/Victor_Final_.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Victor tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -125,7 +135,7 @@ const saintGalleryAssets = import.meta.glob<string>('../../saint/*.jpg', {
 const SAINT_GALLERY: GalleryImage[] = Object.entries(saintGalleryAssets)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Saint tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -140,7 +150,7 @@ const PAWEL_GALLERY: GalleryImage[] = Object.entries(pawelGalleryAssets)
   .filter(([path]) => !path.endsWith('/pawel.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Pawel tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -155,7 +165,7 @@ const TEE_GALLERY: GalleryImage[] = Object.entries(teeGalleryAssets)
   .filter(([path]) => !path.endsWith('/DSC00288.jpg'))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Tee tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -169,7 +179,7 @@ const nemoGalleryAssets = import.meta.glob<string>('../../nemo/*.webp', {
 const NEMO_GALLERY: GalleryImage[] = Object.entries(nemoGalleryAssets)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Nemo tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
@@ -183,12 +193,12 @@ const natashiaGalleryAssets = import.meta.glob<string>('../../NATASHIA/*.{jpg,jp
 const NATASHIA_GALLERY: GalleryImage[] = Object.entries(natashiaGalleryAssets)
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, url]) => ({
-    url,
+    url: resolveMedia(assetFileName(path), url, 'gallery') ?? url,
     alt: `Natashia tattoo artwork — ${path.split('/').pop()?.replace(/[-_]/g, ' ').replace(/\.[^.]+$/, '') ?? 'gallery image'}`,
     orientation: 'portrait',
   }));
 
-export const ARTISTS: Artist[] = [
+const ARTIST_RECORDS: Artist[] = [
   {
     id: 'bang-bang',
     name: 'Bang Bang',
@@ -282,6 +292,19 @@ export const ARTISTS: Artist[] = [
   },
 ];
 
+/**
+ * The published records.
+ *
+ * A portrait's stable key is the artist, not the photograph's filename, so
+ * replacing the photo later does not change what the manifest is looked up
+ * by. Galleries are already resolved above, where the source path is in
+ * scope.
+ */
+export const ARTISTS: Artist[] = ARTIST_RECORDS.map(artist => ({
+  ...artist,
+  portrait: resolveMedia(artist.id, artist.portrait, 'portrait') ?? artist.portrait,
+}));
+
 type Span = [columns: number, rows: number];
 
 export interface WorkImage {
@@ -294,7 +317,8 @@ export interface WorkImage {
 
 // Reuses the gallery asset URL itself, so the viewer can locate the image inside the artist's gallery.
 const workImage = (assets: Record<string, string>, path: string, work: Omit<WorkImage, 'url'>): WorkImage[] => {
-  const url = assets[path];
+  const local = assets[path];
+  const url = local ? resolveMedia(assetFileName(path), local, 'gallery') ?? local : local;
   if (!url) {
     console.error(`WORK image not found in ${work.artistId} gallery: ${path}`);
     return [];
