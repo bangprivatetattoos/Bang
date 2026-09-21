@@ -1,4 +1,4 @@
-import { getAnalyticsSessionId } from './client';
+import { getAnalyticsAttribution, getAnalyticsSessionId, getAnalyticsVisitorId } from './client';
 import { SessionAccumulator } from './sessionMetrics';
 
 /**
@@ -34,6 +34,14 @@ function payload() {
   const { session, content } = feedMetrics.snapshot(Date.now());
   return {
     sessionId: getAnalyticsSessionId(),
+    // Sent so a summary arriving before the first page_view can create the
+    // session row itself, with its attribution intact, rather than being
+    // refused and risking loss if the visitor leaves. Device and geography
+    // are deliberately not sent: the server reads those from the request.
+    visitorId: getAnalyticsVisitorId(),
+    landingPath: typeof window === 'undefined' ? '/' : window.location.pathname,
+    referrer: typeof document === 'undefined' ? null : (document.referrer || null),
+    attribution: getAnalyticsAttribution(),
     summary: session,
     // Only clips with something to report. A clip that was merely prepared
     // has no metrics and no row.

@@ -9,7 +9,7 @@
 // accepted shape at all: no name, no message, no comment, no contact detail,
 // and no way to smuggle one in, because any key not on the allow-list below is
 // dropped before the payload is looked at again.
-import { json, sameOrigin, serverConfig, sourceHash } from "../lib/server-security.mjs";
+import { classifyDevice, classifyPlatform, json, sameOrigin, sanitizeText, serverConfig, sourceHash } from "../lib/server-security.mjs";
 
 const MAX_BODY_BYTES = 16_000;
 /** A session cannot meaningfully touch more clips than the library holds. */
@@ -113,6 +113,44 @@ export default async (request, context) => {
   });
   if (rate.error || !rate.data) return json(429, { error: "rate_limited" });
 
+  // A summary used to be refused when no session row existed yet, because
+  // page_view had not landed. It creates the row itself now, so ingestion no
+  // longer depends on the order the two requests arrive in. Device and
+  // geography are read from the request rather than trusted from the body;
+  // the visitor id, landing path, referrer and campaign are things only the
+  // browser knows, so those are accepted and validated.
+  const visitorId = typeof body?.visitorId === "string" ? body.visitorId : "";
+  if (!UUID.test(visitorId)) return json(400, { error: "invalid_request" });
+
+  const attribution = body?.attribution ?? {};
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const platform = classifyPlatform(userAgent);
+  const geo = context.geo ?? {};
+
+  const ensured = await config.client.rpc("ensure_analytics_session", {
+    p_id: sessionId,
+    p_visitor_id: visitorId,
+    p_landing_path: sanitizeText(body?.landingPath, 500) ?? "/",
+    p_referrer: sanitizeText(body?.referrer, 2048),
+    p_utm_source: sanitizeText(attribution.source, 200),
+    p_utm_medium: sanitizeText(attribution.medium, 200),
+    p_utm_campaign: sanitizeText(attribution.campaign, 300),
+    p_utm_content: sanitizeText(attribution.content, 300),
+    p_utm_term: sanitizeText(attribution.term, 300),
+    p_country: sanitizeText(geo.country?.name, 100),
+    p_country_code: sanitizeText(geo.country?.code, 8),
+    p_region: sanitizeText(geo.subdivision?.name, 100),
+    p_region_code: sanitizeText(geo.subdivision?.code, 16),
+    p_city: sanitizeText(geo.city, 100),
+    p_device_type: classifyDevice(userAgent),
+    p_operating_system: platform.operatingSystem,
+    p_browser: platform.browser,
+  });
+  if (ensured.error) {
+    console.error("analytics-summary: ensure failed", ensured.error.code ?? "unknown");
+    return json(500, { error: "server_error" });
+  }
+
   const summary = cleanSummary(body?.summary);
   const content = cleanContent(body?.content);
 
@@ -128,9 +166,10 @@ export default async (request, context) => {
     return json(500, { error: "server_error" });
   }
 
-  // `false` means the session row does not exist yet, because the page_view
-  // that creates it has not arrived. The client keeps its totals — they are
-  // absolute — and the next flush lands them.
+  // The row is ensured immediately above, so this should no longer be
+  // reachable. Kept as a guard rather than deleted: if it ever fires, the
+  // client still keeps its totals — they are absolute — and the next flush
+  // lands them, which is strictly better than reporting success.
   if (applied.data === false) return json(409, { error: "session_not_ready" });
 
   return json(202, { ok: true });

@@ -56,9 +56,29 @@ export default async (request, context) => {
     referrer: sanitizeText(body.referrer, 2048), utm_source: sanitizeText(attribution.source, 200), utm_medium: sanitizeText(attribution.medium, 200), utm_campaign: sanitizeText(attribution.campaign, 300), utm_content: sanitizeText(attribution.content, 300), utm_term: sanitizeText(attribution.term, 300),
     country: sanitizeText(geo.country?.name, 100), country_code: sanitizeText(geo.country?.code, 8), region: sanitizeText(geo.subdivision?.name, 100), region_code: sanitizeText(geo.subdivision?.code, 16), city: sanitizeText(geo.city, 100), device_type: classifyDevice(ua), operating_system: platform.operatingSystem, browser: platform.browser,
   };
-  const existing = await config.client.from("analytics_sessions").select("id").eq("id", sessionId).maybeSingle();
-  if (existing.error) return json(500, { error: "server_error" });
-  const sessionResult = existing.data ? await config.client.from("analytics_sessions").update({ last_seen_at: session.last_seen_at }).eq("id", sessionId) : await config.client.from("analytics_sessions").insert(session);
+  // One atomic upsert. The previous read-then-write let two concurrent first
+  // requests both see "absent" and both insert, and its update branch touched
+  // only last_seen_at, so a row created anywhere else was never enriched.
+  // `ensure_analytics_session` fills blanks and never overwrites.
+  const sessionResult = await config.client.rpc("ensure_analytics_session", {
+    p_id: sessionId,
+    p_visitor_id: visitorId,
+    p_landing_path: session.landing_path,
+    p_referrer: session.referrer,
+    p_utm_source: session.utm_source,
+    p_utm_medium: session.utm_medium,
+    p_utm_campaign: session.utm_campaign,
+    p_utm_content: session.utm_content,
+    p_utm_term: session.utm_term,
+    p_country: session.country,
+    p_country_code: session.country_code,
+    p_region: session.region,
+    p_region_code: session.region_code,
+    p_city: session.city,
+    p_device_type: session.device_type,
+    p_operating_system: session.operating_system,
+    p_browser: session.browser,
+  });
   if (sessionResult.error) return json(500, { error: "server_error" });
   const safeMetadata = body.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata) ? Object.fromEntries(Object.entries(body.metadata).filter(([key, value]) => METADATA_KEYS.has(key) && typeof value === "string" && value.length <= 120)) : {};
   const result = await config.client.from("analytics_events").insert({ client_event_id: clientEventId, session_id: sessionId, event_name: eventName, page_path: pagePath, entity_type: sanitizeText(body.entityType, 64), entity_id: sanitizeText(body.entityId, 160), metadata: safeMetadata });
