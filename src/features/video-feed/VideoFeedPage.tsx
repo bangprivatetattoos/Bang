@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useNavigate } from 'react-router-dom';
 import { ARTISTS } from '../../data/artists';
 import { trackAnalytics } from '../../analytics/client';
+import { feedMetrics, startSummaryReporting } from '../../analytics/sessionSummary';
 import { useBookingFlow } from '../booking/BookingFlowProvider';
 import { FEED_VIDEOS } from './data/videoManifest';
 import { CAROUSEL_CARDS, preloadCarouselBatch } from './data/carouselAssets';
@@ -196,38 +197,50 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
     });
   }
 
+  // How far the visitor actually got, which a count of swipes cannot tell you
+  // once they start moving backwards and forwards.
+  useEffect(() => { feedMetrics.reachedDepth(feed.position); }, [feed.position]);
+
+  /**
+   * The watch clock follows the clip on screen.
+   *
+   * Stopped whenever something takes over — an overlay, the carousel, a
+   * different clip — so the total is time spent watching rather than time the
+   * page happened to be open.
+   */
+  useEffect(() => {
+    if (!currentVideo || !isPlaying) {
+      feedMetrics.stopWatching(Date.now());
+      return;
+    }
+    feedMetrics.startWatching(currentVideo.id, Date.now());
+  }, [currentVideo?.id, isPlaying]);
+
+  // One reporting lifecycle for the feed: a slow interval plus the moments a
+  // session realistically ends.
+  useEffect(() => {
+    const stop = startSummaryReporting();
+    return () => {
+      feedMetrics.stopWatching(Date.now());
+      stop();
+    };
+  }, []);
+
   const markSwiped = useCallback(() => setHasSwiped(true), []);
 
   const goForward = useCallback((method: NavigationMethod | 'auto_complete') => {
     lastNavigationAt.current = Date.now();
     markSwiped();
-    if (method === 'auto_complete') {
-      trackAnalytics('video_auto_advanced', {
-        entityType: 'content',
-        entityId: currentVideo?.id,
-        metadata: { navigation_method: 'auto_complete' },
-      });
-    } else {
-      // Automatic transitions are deliberately not recorded as swipes.
-      trackAnalytics('video_swiped', {
-        entityType: 'content',
-        entityId: currentVideo?.id,
-        metadata: { direction: 'forward', navigation_method: method },
-      });
-      trackAnalytics('video_swiped_forward', { entityType: 'content', entityId: currentVideo?.id, metadata: { navigation_method: method } });
-    }
+    // Counted, not written. A swipe is not a business event: what matters is
+    // how many there were, which the session summary carries.
+    if (method !== 'auto_complete') feedMetrics.swipedForward();
     feed.goForward();
   }, [feed, currentVideo, markSwiped]);
 
   const goBackward = useCallback((method: NavigationMethod) => {
     if (!feed.canGoBackward) return;
     lastNavigationAt.current = Date.now();
-    trackAnalytics('video_swiped', {
-      entityType: 'content',
-      entityId: currentVideo?.id,
-      metadata: { direction: 'backward', navigation_method: method },
-    });
-    trackAnalytics('video_swiped_back', { entityType: 'content', entityId: currentVideo?.id, metadata: { navigation_method: method } });
+    feedMetrics.swipedBackward();
     feed.goBackward();
   }, [feed, currentVideo]);
 
@@ -251,11 +264,10 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
     setManuallyPaused(paused => {
       const next = !paused;
       setShowPauseIndicator(next);
-      trackAnalytics(next ? 'video_paused' : 'video_resumed', {
-        entityType: 'content',
-        entityId: currentVideo?.id,
-        metadata: currentVideo ? { video_id: currentVideo.id } : undefined,
-      });
+      // Pausing stops the watch clock, which is the only thing a pause
+      // actually tells us. The count of pauses answers no question.
+      if (next) feedMetrics.stopWatching(Date.now());
+      else if (currentVideo) feedMetrics.startWatching(currentVideo.id, Date.now());
       return next;
     });
   }, [currentVideo]);
@@ -274,7 +286,8 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
    */
   const handleEnded = useCallback((endedVideoId: string) => {
     if (endedVideoId !== currentVideo?.id) return;
-    trackAnalytics('video_completed', { entityType: 'content', entityId: endedVideoId, metadata: { video_id: endedVideoId } });
+    feedMetrics.stopWatching(Date.now());
+    feedMetrics.completedVideo(endedVideoId);
     if (overlayOpen || manuallyPaused) return;
     // A manual move already in flight owns this transition.
     if (Date.now() - lastNavigationAt.current < AUTO_ADVANCE_GUARD_MS) return;
@@ -289,7 +302,7 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
     const { id } = currentVideo;
     let cancelled = false;
 
-    trackAnalytics('content_view', { entityType: 'content', entityId: id, metadata: { video_id: id } });
+    feedMetrics.enteredVideo(id);
 
     if (reactions[id] === undefined) {
       void fetchReactions(id).then(result => {
@@ -310,12 +323,18 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
   }, [currentVideo?.id]);
 
   /** Carousel analytics, reported by the interlude through one channel. */
-  const handleCarouselEvent = useCallback((event: CarouselEvent, detail?: Record<string, string>) => {
-    trackAnalytics(event, { entityType: 'carousel', entityId: detail?.content_id, metadata: detail });
+  const handleCarouselEvent = useCallback((event: CarouselEvent) => {
+    // Every one of these repeats several times per interlude, so they are
+    // summed rather than stored. How many portfolio images were actually
+    // looked at is the question; which millisecond each was reached is not.
+    if (event === 'carousel_image_impression') feedMetrics.carouselImageSeen();
+    else if (event === 'carousel_manual_swipe') feedMetrics.carouselSwiped();
   }, []);
 
   useEffect(() => {
-    if (onInterlude) trackAnalytics('carousel_view', { entityType: 'carousel' });
+    if (!onInterlude) return;
+    feedMetrics.stopWatching(Date.now());
+    feedMetrics.carouselShown();
   }, [onInterlude]);
 
   const handleReact = useCallback((reaction: ReactionKind | null) => {
@@ -351,6 +370,7 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
   }, [currentVideo, reactions]);
 
   const startBooking = useCallback((source: string) => {
+    feedMetrics.bookingStarted();
     setDiscoveryOpen(false);
     setSidebarOpen(false);
     setViewerIndex(null);
@@ -359,6 +379,9 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
 
   const openArtist = useCallback((artistId: string) => {
     const artist = ARTISTS.find(item => item.id === artistId);
+    // Opening an artist keeps its own row — it is a business event — and the
+    // counter just lets a session row answer "did they browse artists".
+    feedMetrics.artistProfileViewed();
     trackAnalytics('artist_open', {
       entityType: 'artist',
       entityId: artistId,
@@ -419,12 +442,15 @@ export default function VideoFeedPage({ onOpenInsights }: Props) {
             onAudiblePlayback={sound.reportAudiblePlayback}
             onStarted={video => {
               setCurrentStarted(true);
-              trackAnalytics('video_started', { entityType: 'content', entityId: video.id, metadata: { video_id: video.id } });
+              feedMetrics.startWatching(video.id, Date.now());
             }}
             onEnded={video => handleEnded(video.id)}
-            onMilestone={(video, milestone) => trackAnalytics(milestone, {
-              entityType: 'content', entityId: video.id, metadata: { video_id: video.id, milestone },
-            })}
+            onMilestone={(video, milestone) => {
+              // The three-second mark is what makes a view worth counting;
+              // the quarter marks are shape, and the summary already carries
+              // watch time, which describes that better than four flags.
+              if (milestone === 'video_3s_view') feedMetrics.qualifiedView(video.id);
+            }}
           />
           {nextVideo && nextVideo.id !== currentVideo.id && (
             <VideoFeedItem key={`next-${nextVideo.id}`} video={nextVideo} role="next" shouldPlay={false} soundEnabled={false} audioAttempt={sound.attempt} registerElement={sound.registerElement} />
